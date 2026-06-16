@@ -42,8 +42,8 @@
   }
 
   async function logout() {
-    await BG.db.auth.signOut();
-    window.location.href = getRootPath() + 'index.html';
+  await BG.db.auth.signOut();
+  window.location.href = '/index.html';
   }
 
   /* ════════════════════════════════════
@@ -54,26 +54,19 @@
    * Llamar al inicio de panel.html.
    * Si no hay sesión → login. Si no es admin → index.
    */
-  async function requireAdmin() {
-    const session = await getSession();
-    if (!session) {
-      window.location.href = getRootPath() + 'login.html';
-      return false;
-    }
-    const admin = await isAdmin();
-    if (!admin) {
-      window.location.href = getRootPath() + 'index.html';
-      return false;
-    }
-    return true;
-  }
-
-  /** Detectar si estamos en /pages/ para armar rutas relativas */
-  function getRootPath() {
-    const path = window.location.pathname;
-    return path.includes('/pages/') ? '../' : '';
-  }
-
+     async function requireAdmin() {
+     const session = await getSession();
+     if (!session) {
+       window.location.href = '/login.html';
+       return false;
+     }
+     const admin = await isAdmin();
+     if (!admin) {
+       window.location.href = '/index.html';
+       return false;
+     }
+     return true;
+   }
   /* ════════════════════════════════════
      NAV: mostrar/ocultar enlace PANEL
      y actualizar botón login/logout
