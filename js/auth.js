@@ -94,6 +94,8 @@
         btnAccount.onclick = () => { window.location.href = '/pages/login.html'; };
         btnAccount.innerHTML = `<span class="material-symbols-outlined">login</span>`;
       }
+      // Mostrar el botón recién ahora que ya sabemos el estado
+      btnAccount.style.display = '';
     }
 
     // Info de usuario en sidebar (panel.html)
