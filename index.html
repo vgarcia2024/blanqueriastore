@@ -61,8 +61,7 @@
     </div>
     <div class="flex items-center gap-sm">
       <!-- Ícono de cuenta: login o avatar según sesión (lo maneja auth.js) -->
-      <button id="btn-account" class="p-2 hover:bg-white/10 transition-all rounded-full" title="Iniciar sesión"
-        onclick="window.location.href='login.html'">
+      <button id="btn-account" class="p-2 hover:bg-white/10 transition-all rounded-full" title="Iniciar sesión">
         <span class="material-symbols-outlined">login</span>
       </button>
       <button class="md:hidden p-2" onclick="BG_UI.toggleSidebar()">
@@ -87,8 +86,8 @@
       class="flex items-center gap-sm p-sm rounded-lg text-on-surface-variant hover:bg-surface-container-low" href="pages/panel.html">
       <span class="material-symbols-outlined">admin_panel_settings</span><span>Panel</span>
     </a>
-    <!-- Siempre visible: ir al login -->
-    <a id="mobile-login-link" class="flex items-center gap-sm p-sm rounded-lg text-on-surface-variant hover:bg-surface-container-low" href="login.html">
+    <!-- Se oculta si hay admin logueado -->
+    <a id="mobile-login-link" data-hide-if-admin class="flex items-center gap-sm p-sm rounded-lg text-on-surface-variant hover:bg-surface-container-low" href="login.html">
       <span class="material-symbols-outlined">login</span><span>Iniciar sesión</span>
     </a>
   </nav>
