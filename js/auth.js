@@ -50,7 +50,7 @@
   async function requireAdmin() {
     const session = await getSession();
     if (!session) {
-      window.location.href = '/login.html';
+      window.location.href = '/pages/login.html';
       return false;
     }
     const admin = await isAdmin();
@@ -91,7 +91,7 @@
         btnAccount.innerHTML = `<span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1">account_circle</span>`;
       } else {
         btnAccount.title   = 'Iniciar sesión';
-        btnAccount.onclick = () => { window.location.href = '/login.html'; };
+        btnAccount.onclick = () => { window.location.href = '/pages/login.html'; };
         btnAccount.innerHTML = `<span class="material-symbols-outlined">login</span>`;
       }
     }
