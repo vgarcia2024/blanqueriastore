@@ -1,22 +1,23 @@
 /* ═══════════════════════════════════════════════
    BlancoGestión — ventas.js
-   Lógica completa de la página Ventas / Salida de Stock
 ═══════════════════════════════════════════════ */
 
 (function () {
   'use strict';
 
-  /* ── Estado ── */
   const STATE = {
     page:            1,
     perPage:         20,
     total:           0,
     search:          '',
     statusFilter:    'all',
-    selectedProduct: null,  // { id, nombre, precio, stock, unidad }
+    selectedProduct: null,
   };
 
   const $ = id => document.getElementById(id);
+
+  /* ── Cache de productos para el autocomplete ── */
+  let _suggestionsCache = [];
 
   /* ════════════════════════════════════
      SUMMARY CARDS
@@ -35,7 +36,7 @@
   }
 
   /* ════════════════════════════════════
-     PREVIEW TOTAL en tiempo real
+     PREVIEW TOTAL
   ════════════════════════════════════ */
   function updateTotalPreview() {
     const preview = $('sale-total-preview');
@@ -45,10 +46,10 @@
       preview.className = 'text-center py-2 font-mono font-bold text-lg bg-surface-container-low rounded-lg border border-outline-variant text-on-surface-variant';
       return;
     }
-    const qty = parseInt($('sale-quantity')?.value, 10) || 0;
+    const qty   = parseInt($('sale-quantity')?.value, 10) || 0;
     const total = qty * (STATE.selectedProduct.precio || 0);
     preview.textContent = BG_UI.formatPrice(total);
-    preview.className = 'text-center py-2 font-mono font-bold text-lg bg-surface-container-low rounded-lg border border-primary text-primary';
+    preview.className   = 'text-center py-2 font-mono font-bold text-lg bg-surface-container-low rounded-lg border border-primary text-primary';
   }
 
   /* ════════════════════════════════════
@@ -63,21 +64,15 @@
       </td></tr>`;
       return;
     }
-
     tbody.innerHTML = rows.map(v => {
       const prod    = v.productos || {};
-      const nombre  = prod.nombre  || '—';
-      const cat     = prod.categoria || '';
       const estado  = v.estado === 'completed' ? 'Completado' : 'Pendiente';
-      const badgeCls= v.estado === 'completed'
-        ? 'bg-green-100 text-green-800'
-        : 'bg-yellow-100 text-yellow-800';
-
+      const badgeCls= v.estado === 'completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800';
       return `
       <tr class="transition-colors hover:bg-surface-container-low/50">
         <td class="px-6 py-3">
-          <p class="font-bold text-body-md">${BG_UI.esc(nombre)}</p>
-          <p class="text-xs text-on-surface-variant">${BG_UI.esc(cat)}</p>
+          <p class="font-bold text-body-md">${BG_UI.esc(prod.nombre || '—')}</p>
+          <p class="text-xs text-on-surface-variant">${BG_UI.esc(prod.categoria || '')}</p>
         </td>
         <td class="px-6 py-3 font-mono text-body-md text-on-surface-variant">#${v.id}</td>
         <td class="px-6 py-3 text-body-md font-bold font-mono">${v.cantidad ?? '—'}</td>
@@ -96,7 +91,6 @@
     $('sales-tbody').innerHTML = `<tr><td colspan="7" class="text-center py-10">
       <span class="spinner" style="border-color:#e0e0e0;border-top-color:#000;width:28px;height:28px;border-width:3px;margin:0 auto;display:block"></span>
     </td></tr>`;
-
     try {
       const { data, count } = await BG.getSales({
         search:  STATE.search,
@@ -117,12 +111,8 @@
     const totalPages = Math.ceil(STATE.total / STATE.perPage) || 1;
     const from = ((STATE.page - 1) * STATE.perPage) + 1;
     const to   = Math.min(STATE.page * STATE.perPage, STATE.total);
-
     const info = $('sales-pagination-info');
-    if (info) info.textContent = STATE.total
-      ? `Mostrando ${from}–${to} de ${STATE.total}`
-      : 'Sin ventas';
-
+    if (info) info.textContent = STATE.total ? `Mostrando ${from}–${to} de ${STATE.total}` : 'Sin ventas';
     const prev = $('sales-prev');
     const next = $('sales-next');
     if (prev) prev.disabled = STATE.page <= 1;
@@ -130,66 +120,76 @@
   }
 
   /* ════════════════════════════════════
-     AUTOCOMPLETE DE PRODUCTO
+     AUTOCOMPLETE — usando data-index
+     en vez de JSON.stringify en onclick
   ════════════════════════════════════ */
   function showSuggestions(products) {
+    _suggestionsCache = products; // guardar en cache para acceder por índice
     const container = $('sale-product-suggestions');
+
     if (!products.length) {
-      container.innerHTML = `<div class="px-4 py-3 text-on-surface-variant text-sm">Sin resultados para esa búsqueda.</div>`;
+      container.innerHTML = `<div class="px-4 py-3 text-on-surface-variant text-sm">Sin resultados.</div>`;
       container.classList.remove('hidden');
       return;
     }
 
-    container.innerHTML = products.map(p => {
+    container.innerHTML = products.map((p, i) => {
       const { cls, label } = BG_UI.stockBadge(p.stock);
       const stockInfo = p.stock === 0
-        ? `<span class="text-xs badge-out px-1.5 rounded font-bold">SIN STOCK</span>`
+        ? `<span class="text-xs text-error font-bold">SIN STOCK</span>`
         : `<span class="text-xs text-on-surface-variant">${p.stock} en stock</span>`;
-
       return `
-      <div class="px-4 py-3 hover:bg-surface-container-low cursor-pointer flex items-center justify-between gap-2"
-           onclick="VentasPage.selectProduct(${p.id}, ${JSON.stringify(p.nombre)}, ${p.precio || 0}, ${p.stock}, ${JSON.stringify(p.unidad_venta || 'unidad')})">
-        <div>
+      <div class="px-4 py-3 hover:bg-surface-container-low cursor-pointer flex items-center justify-between gap-2 select-none"
+           data-index="${i}">
+        <div class="pointer-events-none">
           <p class="font-bold text-sm">${BG_UI.esc(p.nombre)}</p>
           <p class="text-xs text-on-surface-variant">${BG_UI.esc(p.categoria || '')}</p>
         </div>
-        <div class="text-right flex-shrink-0">
+        <div class="text-right flex-shrink-0 pointer-events-none">
           <p class="font-mono text-sm font-bold">${BG_UI.formatPrice(p.precio)}</p>
           ${stockInfo}
         </div>
       </div>`;
     }).join('');
 
+    // Un solo listener en el contenedor (event delegation)
     container.classList.remove('hidden');
   }
 
   function hideSuggestions() {
-    setTimeout(() => $('sale-product-suggestions')?.classList.add('hidden'), 200);
+    setTimeout(() => $('sale-product-suggestions')?.classList.add('hidden'), 150);
   }
 
-  function selectProduct(id, nombre, precio, stock, unidad) {
-    STATE.selectedProduct = { id, nombre, precio, stock, unidad };
+  function selectProduct(p) {
+    STATE.selectedProduct = {
+      id:     p.id,
+      nombre: p.nombre,
+      precio: p.precio || 0,
+      stock:  p.stock,
+      unidad: p.unidad_venta || 'unidad',
+    };
 
     const input = $('sale-product-search');
-    if (input) input.value = nombre;
+    if (input) input.value = p.nombre;
 
     const info = $('sale-product-info');
     if (info) {
-      const { cls, label } = BG_UI.stockBadge(stock);
+      const { cls, label } = BG_UI.stockBadge(p.stock);
       info.innerHTML = `
         <span class="material-symbols-outlined text-sm text-green-700">check_circle</span>
-        <span class="font-bold text-sm">${BG_UI.esc(nombre)}</span>
+        <span class="font-bold text-sm">${BG_UI.esc(p.nombre)}</span>
         <span class="text-on-surface-variant text-xs">·</span>
-        <span class="font-mono text-sm font-bold">${BG_UI.formatPrice(precio)}</span>
+        <span class="font-mono text-sm font-bold">${BG_UI.formatPrice(p.precio)}</span>
         <span class="text-on-surface-variant text-xs">·</span>
-        <span class="text-xs ${cls} px-1.5 rounded font-bold">${label} (${stock} uds.)</span>`;
+        <span class="text-xs ${cls} px-1.5 rounded font-bold">${label} (${p.stock} uds.)</span>`;
       info.classList.remove('hidden');
     }
 
     $('sale-product-suggestions')?.classList.add('hidden');
     updateTotalPreview();
-    $('sale-quantity')?.select();
-    $('sale-quantity')?.focus();
+
+    const qty = $('sale-quantity');
+    if (qty) { qty.max = p.stock; qty.select(); qty.focus(); }
   }
 
   /* ════════════════════════════════════
@@ -207,47 +207,33 @@
     const cantidad = parseInt($('sale-quantity')?.value, 10);
     if (!cantidad || cantidad < 1) {
       BG_UI.toast('La cantidad debe ser al menos 1.', 'warning');
-      $('sale-quantity')?.focus();
       return;
     }
-
     if (cantidad > STATE.selectedProduct.stock) {
-      BG_UI.toast(
-        `Stock insuficiente. Disponible: ${STATE.selectedProduct.stock} unidades.`,
-        'error'
-      );
-      $('sale-quantity')?.focus();
+      BG_UI.toast(`Stock insuficiente. Disponible: ${STATE.selectedProduct.stock} unidades.`, 'error');
       return;
     }
 
     const detalle = $('sale-detalle')?.value.trim() || '';
-
-    const btn = $('btn-register-sale');
-    btn.disabled = true;
+    const btn     = $('btn-register-sale');
+    btn.disabled  = true;
     btn.innerHTML = `<span class="spinner" style="width:18px;height:18px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:6px"></span> Registrando...`;
 
     try {
       await BG.registerSale(
         STATE.selectedProduct.id,
         cantidad,
-        STATE.selectedProduct.precio || 0,
+        STATE.selectedProduct.precio,
         detalle
       );
-
-      const total = BG_UI.formatPrice(cantidad * (STATE.selectedProduct.precio || 0));
-      BG_UI.toast(
-        `✓ Venta registrada: ${cantidad}× ${STATE.selectedProduct.nombre} — ${total}`,
-        'success',
-        5000
-      );
-
+      const total = BG_UI.formatPrice(cantidad * STATE.selectedProduct.precio);
+      BG_UI.toast(`✓ ${cantidad}× ${STATE.selectedProduct.nombre} — ${total}`, 'success', 5000);
       resetSaleForm();
       await Promise.all([loadSales(), loadSummary()]);
-
     } catch (err) {
       BG_UI.toast(err.message, 'error');
     } finally {
-      btn.disabled = false;
+      btn.disabled  = false;
       btn.innerHTML = `<span class="material-symbols-outlined">inventory_2</span> Registrar Venta / Salida de Stock`;
     }
   }
@@ -257,7 +243,7 @@
     const input = $('sale-product-search');
     if (input) input.value = '';
     const qty = $('sale-quantity');
-    if (qty) qty.value = 1;
+    if (qty) { qty.value = 1; qty.removeAttribute('max'); }
     const det = $('sale-detalle');
     if (det) det.value = '';
     const info = $('sale-product-info');
@@ -292,13 +278,20 @@
      INIT
   ════════════════════════════════════ */
   function init() {
-    /* ── Formulario de venta ── */
     $('sale-form')?.addEventListener('submit', registerSale);
-
-    /* ── Preview total al cambiar cantidad ── */
     $('sale-quantity')?.addEventListener('input', updateTotalPreview);
 
-    /* ── Autocomplete búsqueda de producto ── */
+    /* Autocomplete con event delegation en el contenedor */
+    const suggestionsContainer = $('sale-product-suggestions');
+    suggestionsContainer?.addEventListener('mousedown', e => {
+      // mousedown en vez de click para que dispare antes del blur del input
+      const item = e.target.closest('[data-index]');
+      if (!item) return;
+      const idx = parseInt(item.dataset.index, 10);
+      const p   = _suggestionsCache[idx];
+      if (p) selectProduct(p);
+    });
+
     const searchInput = $('sale-product-search');
     searchInput?.addEventListener('input', BG_UI.debounce(async e => {
       const term = e.target.value.trim();
@@ -320,21 +313,18 @@
       if (e.key === 'Escape') $('sale-product-suggestions')?.classList.add('hidden');
     });
 
-    /* ── Búsqueda en historial (desktop) ── */
     $('sales-search')?.addEventListener('input', BG_UI.debounce(e => {
       STATE.search = e.target.value.trim();
       STATE.page   = 1;
       loadSales();
     }));
 
-    /* ── Búsqueda en historial (mobile) ── */
     $('sales-search-mobile')?.addEventListener('input', BG_UI.debounce(e => {
       STATE.search = e.target.value.trim();
       STATE.page   = 1;
       loadSales();
     }));
 
-    /* ── Filtros de estado ── */
     document.querySelectorAll('[data-status-filter]').forEach(btn => {
       btn.addEventListener('click', () => {
         document.querySelectorAll('[data-status-filter]').forEach(b => {
@@ -349,25 +339,20 @@
       });
     });
 
-    /* ── Paginación ── */
     $('sales-prev')?.addEventListener('click', () => {
       if (STATE.page > 1) { STATE.page--; loadSales(); }
     });
     $('sales-next')?.addEventListener('click', () => {
-      const totalPages = Math.ceil(STATE.total / STATE.perPage);
-      if (STATE.page < totalPages) { STATE.page++; loadSales(); }
+      if (STATE.page < Math.ceil(STATE.total / STATE.perPage)) { STATE.page++; loadSales(); }
     });
 
-    /* ── Exportar ── */
     $('btn-export-sales')?.addEventListener('click', exportSales);
 
-    /* ── Init data ── */
     loadSummary();
     loadSales();
   }
 
-  /* Exponer para onclick inline (autocomplete dropdown) */
-  window.VentasPage = { selectProduct };
+  window.VentasPage = { reload: () => { loadSummary(); loadSales(); } };
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
