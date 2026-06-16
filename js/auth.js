@@ -92,7 +92,7 @@
       } else {
         btnAccount.title   = 'Iniciar sesión';
         btnAccount.onclick = () => { window.location.href = '/pages/login.html'; };
-        btnAccount.innerHTML = `<span class="material-symbols-outlined">person</span><span class="text-label-caps font-bold ml-1">Iniciar sesión</span>`;
+        btnAccount.innerHTML = `<span class="flex items-center gap-xs"><span class="material-symbols-outlined text-base">person</span><span class="text-label-caps font-bold">Iniciar sesión</span></span>`;
       }
       // Mostrar el botón recién ahora que ya sabemos el estado
       btnAccount.style.display = '';
