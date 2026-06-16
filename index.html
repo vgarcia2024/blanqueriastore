@@ -216,6 +216,13 @@
     }
   }
 
+  const WA_NUMBER = '5493364193123';
+
+  function waLink(nombre, cantidad) {
+    const msg = encodeURIComponent(`¡Hola! Me gustaría ${cantidad} de ${nombre}. ¿Cómo seguimos?`);
+    return `https://wa.me/${WA_NUMBER}?text=${msg}`;
+  }
+
   /* Catálogo público */
   async function loadCatalog(search = '') {
     const grid    = document.getElementById('catalog-grid');
@@ -231,19 +238,33 @@
 
       grid.innerHTML = data.map(p => {
         const { cls, label } = BG_UI.stockBadge(p.stock);
+        const sinStock = p.stock === 0;
         const img = p.imagen_url
-          ? `<img src="${esc(p.imagen_url)}" alt="${esc(p.nombre)}" class="w-full h-full object-cover img-gray"/>`
+          ? `<img src="${esc(p.imagen_url)}" alt="${esc(p.nombre)}" class="w-full h-full object-cover"/>`
           : `<div class="w-full h-full flex items-center justify-center bg-surface-container"><span class="material-symbols-outlined text-3xl text-outline">imagesmode</span></div>`;
         return `
-          <div class="flat-card rounded-xl overflow-hidden">
-            <div class="aspect-square bg-surface-container overflow-hidden">${img}</div>
-            <div class="p-sm">
+          <div class="flat-card rounded-xl overflow-hidden border border-outline-variant bg-white shadow-sm flex flex-col">
+            <div class="aspect-square bg-surface-container overflow-hidden relative">
+              ${img}
+              <span class="absolute top-2 right-2 text-[10px] font-bold ${cls} px-1.5 py-0.5 rounded">${label}</span>
+            </div>
+            <div class="p-sm flex flex-col gap-xs flex-1">
               <h4 class="font-bold text-body-md truncate">${esc(p.nombre)}</h4>
               <p class="text-xs text-on-surface-variant truncate">${esc(p.categoria || '')}</p>
-              <div class="flex justify-between items-center mt-xs">
-                <span class="font-mono text-sm font-bold">${BG_UI.formatPrice(p.precio)}</span>
-                <span class="text-[10px] font-bold ${cls} px-1.5 rounded">${label}</span>
+              <p class="font-mono text-sm font-bold">${BG_UI.formatPrice(p.precio)}</p>
+              ${!sinStock ? `
+              <div class="flex items-center gap-xs mt-xs">
+                <label class="text-[10px] text-on-surface-variant font-bold">CANT.</label>
+                <input type="number" min="1" max="${p.stock}" value="1" id="qty-${p.id}"
+                  class="w-14 text-center border border-outline-variant rounded px-1 py-0.5 text-sm font-mono focus:outline-none focus:border-primary"/>
               </div>
+              <a id="wa-${p.id}" href="${waLink(p.nombre, 1)}" target="_blank"
+                onclick="this.href='https://wa.me/${WA_NUMBER}?text='+encodeURIComponent('¡Hola! Me gustaría '+document.getElementById('qty-${p.id}').value+' de ${esc(p.nombre)}. ¿Cómo seguimos?')"
+                class="mt-xs flex items-center justify-center gap-xs bg-[#25D366] text-white text-[11px] font-bold py-1.5 rounded-lg hover:opacity-90 transition-all">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.126 1.534 5.857L.057 23.882a.75.75 0 0 0 .921.921l6.025-1.477A11.955 11.955 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.75a9.75 9.75 0 0 1-4.989-1.373l-.358-.214-3.717.911.931-3.613-.234-.373A9.75 9.75 0 1 1 12 21.75z"/></svg>
+                Enviar por WhatsApp
+              </a>` : `
+              <p class="mt-xs text-center text-[11px] text-error font-bold py-1.5">Sin stock disponible</p>`}
             </div>
           </div>`;
       }).join('');
