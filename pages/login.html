@@ -7,9 +7,9 @@
   <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
-  <link rel="stylesheet" href="css/main.css"/>
+  <link rel="stylesheet" href="../css/main.css"/>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="env-config.js" onerror="console.warn('env-config.js no encontrado.')"></script>
+  <script src="../env-config.js" onerror="console.warn('env-config.js no encontrado.')"></script>
   <script id="tailwind-config">
     tailwind.config = {
       darkMode:"class",
@@ -49,7 +49,7 @@
 
   <!-- Logo -->
   <div class="text-center mb-lg">
-    <a href="index.html" class="inline-block">
+    <a href="/" class="inline-block">
       <h1 class="font-bold text-primary text-2xl tracking-tight">BlancoGestión</h1>
       <p class="text-on-surface-variant text-sm mt-1">Panel de administración</p>
     </a>
@@ -126,7 +126,7 @@
 
   <!-- Volver al inicio -->
   <p class="text-center mt-md text-sm text-on-surface-variant">
-    <a href="../index.html" class="hover:text-on-surface transition-colors underline underline-offset-2">
+    <a href="/" class="hover:text-on-surface transition-colors underline underline-offset-2">
       ← Volver al inicio
     </a>
   </p>
@@ -135,9 +135,9 @@
 
 <div id="toast-container"></div>
 
-<script src="js/supabase.js"></script>
-<script src="js/main.js"></script>
-<script src="js/auth.js"></script>
+<script src="../js/supabase.js"></script>
+<script src="../js/main.js"></script>
+<script src="../js/auth.js"></script>
 <script>
 (function () {
   'use strict';
@@ -146,7 +146,7 @@
   BG_AUTH.getSession().then(session => {
     if (session) {
       BG_AUTH.isAdmin().then(admin => {
-        if (admin) window.location.href = 'pages/panel.html';
+        if (admin) window.location.href = '/pages/panel.html';
       });
     }
   });
@@ -181,7 +181,6 @@
     try {
       await BG_AUTH.login(email, password);
 
-      /* Verificar que sea admin */
       const admin = await BG_AUTH.isAdmin();
       if (!admin) {
         await BG_AUTH.logout();
@@ -189,7 +188,7 @@
       }
 
       BG_UI.toast('¡Bienvenido!', 'success');
-      setTimeout(() => { window.location.href = 'pages/panel.html'; }, 600);
+      setTimeout(() => { window.location.href = '/pages/panel.html'; }, 600);
 
     } catch (err) {
       errorMsg.textContent = err.message === 'Invalid login credentials'
