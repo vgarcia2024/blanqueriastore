@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"/>
   <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-  <title>BlancoGestión — Control de Inventario de Blanquería</title>
+  <title>BlancoGestión — Blanquería</title>
   <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
@@ -55,12 +55,15 @@
     </div>
     <div class="hidden md:flex items-center gap-md">
       <a class="text-on-primary border-b-2 border-on-primary pb-1 font-bold text-label-caps" href="index.html">INICIO</a>
-      <a class="text-on-primary/70 hover:text-on-primary transition-colors text-label-caps" href="pages/stock.html">STOCK</a>
-      <a class="text-on-primary/70 hover:text-on-primary transition-colors text-label-caps" href="pages/ventas.html">VENTAS</a>
+      <!-- Solo visible para admins logueados -->
+      <a id="nav-panel-link" data-admin-only style="display:none"
+        class="text-on-primary/70 hover:text-on-primary transition-colors text-label-caps font-bold" href="pages/panel.html">PANEL</a>
     </div>
     <div class="flex items-center gap-sm">
-      <button class="p-2 hover:bg-white/10 transition-all rounded-full">
-        <span class="material-symbols-outlined">account_circle</span>
+      <!-- Ícono de cuenta: login o avatar según sesión (lo maneja auth.js) -->
+      <button id="btn-account" class="p-2 hover:bg-white/10 transition-all rounded-full" title="Iniciar sesión"
+        onclick="window.location.href='login.html'">
+        <span class="material-symbols-outlined">login</span>
       </button>
       <button class="md:hidden p-2" onclick="BG_UI.toggleSidebar()">
         <span class="material-symbols-outlined">menu</span>
@@ -69,7 +72,7 @@
   </div>
 </nav>
 
-<!-- Mobile sidebar overlay -->
+<!-- Mobile sidebar -->
 <aside id="sidebar" class="sidebar-desktop fixed left-0 top-0 flex flex-col p-md h-screen w-64 border-r border-outline-variant bg-surface z-50 md:hidden">
   <div class="mb-lg mt-16">
     <h1 class="font-bold text-primary text-lg">BlancoGestión</h1>
@@ -79,19 +82,22 @@
     <a class="flex items-center gap-sm p-sm rounded-lg font-bold bg-surface-container" href="index.html">
       <span class="material-symbols-outlined">home</span><span>Inicio</span>
     </a>
-    <a class="flex items-center gap-sm p-sm rounded-lg text-on-surface-variant hover:bg-surface-container-low" href="pages/stock.html">
-      <span class="material-symbols-outlined">inventory_2</span><span>Stock</span>
+    <!-- Solo visible para admins -->
+    <a id="mobile-panel-link" data-admin-only style="display:none"
+      class="flex items-center gap-sm p-sm rounded-lg text-on-surface-variant hover:bg-surface-container-low" href="pages/panel.html">
+      <span class="material-symbols-outlined">admin_panel_settings</span><span>Panel</span>
     </a>
-    <a class="flex items-center gap-sm p-sm rounded-lg text-on-surface-variant hover:bg-surface-container-low" href="pages/ventas.html">
-      <span class="material-symbols-outlined">payments</span><span>Ventas</span>
+    <!-- Siempre visible: ir al login -->
+    <a id="mobile-login-link" class="flex items-center gap-sm p-sm rounded-lg text-on-surface-variant hover:bg-surface-container-low" href="login.html">
+      <span class="material-symbols-outlined">login</span><span>Iniciar sesión</span>
     </a>
   </nav>
 </aside>
 
 <main class="pt-16">
 
-  <!-- Hero -->
-  <section class="relative min-h-[520px] flex items-center justify-center overflow-hidden bg-surface py-xl">
+  <!-- Hero público -->
+  <section class="relative min-h-[420px] flex items-center justify-center overflow-hidden bg-surface py-xl">
     <div class="absolute inset-0 opacity-[0.06] pointer-events-none">
       <div class="grid grid-cols-12 h-full w-full">
         <div class="border-r border-outline-variant"></div><div class="border-r border-outline-variant"></div>
@@ -103,21 +109,13 @@
       </div>
     </div>
     <div class="relative z-10 max-w-4xl mx-auto px-gutter text-center">
-      <span class="inline-block text-label-caps text-secondary border border-outline-variant px-3 py-1 rounded mb-md">SISTEMA DE GESTIÓN v1.0</span>
+      <span class="inline-block text-label-caps text-secondary border border-outline-variant px-3 py-1 rounded mb-md">BLANQUERÍA</span>
       <h1 class="text-headline-lg font-bold mb-base leading-tight">
-        Gestión Táctil para tu Blanquería.
+        Sábanas, Toallas y Edredones.
       </h1>
       <p class="text-body-lg text-secondary mb-lg max-w-2xl mx-auto">
-        Controlá el stock de sábanas, toallas y edredones con una interfaz limpia diseñada para la eficiencia diaria.
+        Explorá nuestro catálogo de productos y consultá disponibilidad de stock en tiempo real.
       </p>
-      <div class="flex flex-col md:flex-row gap-base justify-center">
-        <a href="pages/stock.html" class="bg-primary text-on-primary px-lg py-sm font-bold rounded hover:opacity-90 transition-all text-label-caps flex items-center justify-center gap-xs">
-          <span class="material-symbols-outlined text-[18px]">inventory_2</span> VER INVENTARIO
-        </a>
-        <a href="pages/ventas.html" class="border border-primary text-primary px-lg py-sm font-bold rounded hover:bg-surface-container transition-all text-label-caps flex items-center justify-center gap-xs">
-          <span class="material-symbols-outlined text-[18px]">payments</span> REGISTRAR VENTA
-        </a>
-      </div>
     </div>
   </section>
 
@@ -155,111 +153,28 @@
     </div>
   </div>
 
-  <!-- Ventas recientes + alertas -->
-  <div class="max-w-container-max mx-auto px-gutter mt-lg grid grid-cols-1 md:grid-cols-3 gap-md">
-
-    <!-- Resumen de ventas 30 días -->
-    <div class="md:col-span-2 bg-white border border-outline-variant rounded-xl p-md shadow-sm">
-      <div class="flex items-center justify-between mb-md">
-        <div>
-          <p class="text-label-caps text-secondary">VENTAS — ÚLTIMOS 30 DÍAS</p>
-          <h3 class="font-bold text-lg mt-0.5">Resumen de Actividad</h3>
-        </div>
-        <a href="pages/ventas.html" class="text-label-caps underline text-secondary hover:text-primary">VER TODO</a>
-      </div>
-      <div class="grid grid-cols-3 gap-md border-t border-outline-variant pt-md">
-        <div>
-          <p class="text-label-caps text-secondary mb-xs">INGRESOS</p>
-          <p class="text-headline-sm font-bold" id="dash-revenue">—</p>
-        </div>
-        <div>
-          <p class="text-label-caps text-secondary mb-xs">UNIDADES</p>
-          <p class="text-headline-sm font-bold" id="dash-units">—</p>
-        </div>
-        <div>
-          <p class="text-label-caps text-secondary mb-xs">TRANSACCIONES</p>
-          <p class="text-headline-sm font-bold" id="dash-count">—</p>
-        </div>
-      </div>
-
-      <!-- Últimas ventas -->
-      <div class="mt-md border-t border-outline-variant pt-md">
-        <p class="text-label-caps text-secondary mb-sm">ÚLTIMAS TRANSACCIONES</p>
-        <div id="recent-sales" class="space-y-2">
-          <div class="animate-pulse h-8 bg-surface-container rounded"></div>
-          <div class="animate-pulse h-8 bg-surface-container rounded"></div>
-          <div class="animate-pulse h-8 bg-surface-container rounded"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Alertas de stock -->
-    <div class="bg-white border border-outline-variant rounded-xl p-md shadow-sm">
-      <div class="flex items-center gap-xs mb-md">
-        <span class="material-symbols-outlined text-yellow-700">notifications_active</span>
-        <div>
-          <p class="text-label-caps text-secondary">ALERTAS</p>
-          <h3 class="font-bold text-lg mt-0.5">Stock Crítico</h3>
-        </div>
-      </div>
-      <div id="stock-alerts" class="space-y-2">
-        <div class="animate-pulse h-12 bg-surface-container rounded"></div>
-        <div class="animate-pulse h-12 bg-surface-container rounded"></div>
-        <div class="animate-pulse h-12 bg-surface-container rounded"></div>
-      </div>
-      <a href="pages/stock.html?filter=low" class="mt-md block text-center text-label-caps border border-outline-variant rounded py-2 hover:bg-surface-container transition-colors">
-        VER TODOS →
-      </a>
-    </div>
-  </div>
-
-  <!-- Catálogo / Stock General -->
+  <!-- Catálogo de productos -->
   <section class="py-xl max-w-container-max mx-auto px-gutter">
-    <div>
-      <div class="flex flex-col md:flex-row md:items-center justify-between mb-lg border-b border-outline-variant pb-base gap-md">
-        <div>
-          <span class="text-label-caps text-secondary">INVENTARIO</span>
-          <h2 class="text-headline-md font-bold mt-xs uppercase tracking-tight">Stock General</h2>
-        </div>
-        <div class="flex items-center gap-sm">
-          <div class="relative">
-            <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-sm">search</span>
-            <input id="catalog-search" class="pl-9 pr-4 py-2 border border-outline-variant rounded-lg bg-surface-container-lowest text-body-md focus:outline-none focus:border-primary w-56" placeholder="Buscar producto..." type="text"/>
-          </div>
-          <a href="pages/stock.html" class="flex items-center gap-xs px-md py-2 border border-primary text-primary text-label-caps rounded hover:bg-surface-container-low transition-colors font-bold">
-            <span class="material-symbols-outlined text-[16px]">open_in_new</span> GESTIONAR
-          </a>
-        </div>
-      </div>
-
-      <div id="catalog-grid" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-md">
-        <!-- Skeleton -->
-        <div class="flat-card animate-pulse rounded-xl overflow-hidden"><div class="aspect-square bg-surface-container"></div><div class="p-sm"><div class="h-4 bg-surface-container rounded mb-2"></div><div class="h-3 bg-surface-container rounded w-2/3"></div></div></div>
-        <div class="flat-card animate-pulse rounded-xl overflow-hidden"><div class="aspect-square bg-surface-container"></div><div class="p-sm"><div class="h-4 bg-surface-container rounded mb-2"></div><div class="h-3 bg-surface-container rounded w-2/3"></div></div></div>
-        <div class="flat-card animate-pulse rounded-xl overflow-hidden"><div class="aspect-square bg-surface-container"></div><div class="p-sm"><div class="h-4 bg-surface-container rounded mb-2"></div><div class="h-3 bg-surface-container rounded w-2/3"></div></div></div>
-        <div class="flat-card animate-pulse rounded-xl overflow-hidden"><div class="aspect-square bg-surface-container"></div><div class="p-sm"><div class="h-4 bg-surface-container rounded mb-2"></div><div class="h-3 bg-surface-container rounded w-2/3"></div></div></div>
-        <div class="flat-card animate-pulse rounded-xl overflow-hidden"><div class="aspect-square bg-surface-container"></div><div class="p-sm"><div class="h-4 bg-surface-container rounded mb-2"></div><div class="h-3 bg-surface-container rounded w-2/3"></div></div></div>
-      </div>
-      <p id="catalog-count" class="text-label-caps text-secondary mt-md text-center">Cargando...</p>
-    </div>
-  </section>
-
-  <!-- CTA Banner -->
-  <section class="max-w-container-max mx-auto px-gutter pb-xl">
-    <div class="bg-primary text-on-primary p-xl rounded-xl flex flex-col md:flex-row items-center justify-between gap-md">
+    <div class="flex flex-col md:flex-row md:items-center justify-between mb-lg border-b border-outline-variant pb-base gap-md">
       <div>
-        <h2 class="text-headline-md font-bold mb-base">Gestioná tu inventario en tiempo real.</h2>
-        <p class="text-on-primary/70 text-body-lg">Registrá ventas, controlá el stock y exportá reportes CSV al instante.</p>
+        <span class="text-label-caps text-secondary">INVENTARIO</span>
+        <h2 class="text-headline-md font-bold mt-xs uppercase tracking-tight">Nuestros Productos</h2>
       </div>
-      <div class="flex gap-sm flex-shrink-0">
-        <a href="pages/stock.html" class="bg-on-primary text-primary px-lg py-sm font-bold text-label-caps rounded hover:opacity-90 transition-all">
-          IR AL STOCK
-        </a>
-        <a href="pages/ventas.html" class="border border-on-primary text-on-primary px-lg py-sm font-bold text-label-caps rounded hover:bg-white/10 transition-all">
-          VENTAS
-        </a>
+      <div class="relative">
+        <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-sm">search</span>
+        <input id="catalog-search" class="pl-9 pr-4 py-2 border border-outline-variant rounded-lg bg-surface-container-lowest text-body-md focus:outline-none focus:border-primary w-56" placeholder="Buscar producto..." type="text"/>
       </div>
     </div>
+
+    <div id="catalog-grid" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-md">
+      <!-- Skeletons -->
+      <div class="flat-card animate-pulse rounded-xl overflow-hidden"><div class="aspect-square bg-surface-container"></div><div class="p-sm"><div class="h-4 bg-surface-container rounded mb-2"></div><div class="h-3 bg-surface-container rounded w-2/3"></div></div></div>
+      <div class="flat-card animate-pulse rounded-xl overflow-hidden"><div class="aspect-square bg-surface-container"></div><div class="p-sm"><div class="h-4 bg-surface-container rounded mb-2"></div><div class="h-3 bg-surface-container rounded w-2/3"></div></div></div>
+      <div class="flat-card animate-pulse rounded-xl overflow-hidden"><div class="aspect-square bg-surface-container"></div><div class="p-sm"><div class="h-4 bg-surface-container rounded mb-2"></div><div class="h-3 bg-surface-container rounded w-2/3"></div></div></div>
+      <div class="flat-card animate-pulse rounded-xl overflow-hidden"><div class="aspect-square bg-surface-container"></div><div class="p-sm"><div class="h-4 bg-surface-container rounded mb-2"></div><div class="h-3 bg-surface-container rounded w-2/3"></div></div></div>
+      <div class="flat-card animate-pulse rounded-xl overflow-hidden"><div class="aspect-square bg-surface-container"></div><div class="p-sm"><div class="h-4 bg-surface-container rounded mb-2"></div><div class="h-3 bg-surface-container rounded w-2/3"></div></div></div>
+    </div>
+    <p id="catalog-count" class="text-label-caps text-secondary mt-md text-center">Cargando...</p>
   </section>
 
 </main>
@@ -268,27 +183,20 @@
 <footer class="bg-surface-container-lowest border-t border-outline-variant py-lg">
   <div class="flex flex-col md:flex-row justify-between items-center px-gutter w-full max-w-container-max mx-auto">
     <div class="mb-md md:mb-0">
-      <span class="text-label-caps text-secondary tracking-widest uppercase">© 2025 BlancoGestión — Sistema de Control de Inventario</span>
+      <span class="text-label-caps text-secondary tracking-widest uppercase">© 2025 BlancoGestión</span>
     </div>
     <div class="flex gap-md">
-      <a class="text-secondary hover:text-primary text-body-md transition-colors" href="pages/stock.html">Stock</a>
-      <a class="text-secondary hover:text-primary text-body-md transition-colors" href="pages/ventas.html">Ventas</a>
+      <a class="text-secondary hover:text-primary text-body-md transition-colors" href="login.html">Administración</a>
     </div>
   </div>
 </footer>
-
-<button class="fab" onclick="window.location.href='pages/stock.html'">
-  <span class="material-symbols-outlined" style="font-variation-settings:'wght' 700">add</span>
-</button>
 
 <div id="toast-container"></div>
 
 <script src="js/supabase.js"></script>
 <script src="js/main.js"></script>
+<script src="js/auth.js"></script>
 <script>
-/* ════════════════════════════════════
-   index.js — Dashboard
-════════════════════════════════════ */
 (function () {
   'use strict';
 
@@ -296,7 +204,7 @@
     return String(str ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   }
 
-  /* Stats */
+  /* Stats públicas */
   async function loadStats() {
     try {
       const stats = await BG.getDashboardStats();
@@ -309,94 +217,16 @@
     }
   }
 
-  /* Ventas resumen */
-  async function loadSalesSummary() {
-    try {
-      const { revenue, units, count } = await BG.getSalesSummary();
-      document.getElementById('dash-revenue').textContent = BG_UI.formatPrice(revenue);
-      document.getElementById('dash-units').textContent   = units.toLocaleString('es-AR');
-      document.getElementById('dash-count').textContent   = count.toLocaleString('es-AR');
-    } catch (err) {
-      ['dash-revenue','dash-units','dash-count'].forEach(id => {
-        document.getElementById(id).textContent = '—';
-      });
-    }
-  }
-
-  /* Últimas ventas */
-  async function loadRecentSales() {
-    const container = document.getElementById('recent-sales');
-    try {
-      const { data } = await BG.getSales({ perPage: 5 });
-      if (!data.length) {
-        container.innerHTML = `<p class="text-on-surface-variant text-sm text-center py-4">Sin ventas registradas aún.</p>`;
-        return;
-      }
-      container.innerHTML = data.map(v => `
-        <div class="flex items-center justify-between py-2 border-b border-outline-variant last:border-0">
-          <div class="flex items-center gap-sm">
-            <span class="material-symbols-outlined text-sm text-secondary">receipt_long</span>
-            <div>
-              <p class="font-bold text-sm">${esc(v.productos?.nombre || '—')}</p>
-              <p class="text-xs text-on-surface-variant">${BG_UI.formatDate(v.created_at)}</p>
-            </div>
-          </div>
-          <div class="text-right">
-            <p class="font-mono font-bold text-sm">${BG_UI.formatPrice(v.total)}</p>
-            <p class="text-xs text-on-surface-variant">${v.cantidad} uds.</p>
-          </div>
-        </div>`).join('');
-    } catch (err) {
-      container.innerHTML = `<p class="text-xs text-on-surface-variant text-center py-2">No disponible</p>`;
-    }
-  }
-
-  /* Alertas stock crítico */
-  async function loadStockAlerts() {
-    const container = document.getElementById('stock-alerts');
-    try {
-      const { data } = await BG.getProducts({ stockFilter: 'low', perPage: 5 });
-      const { data: outData } = await BG.getProducts({ stockFilter: 'out', perPage: 3 });
-      const all = [...(outData || []), ...(data || [])].slice(0, 6);
-
-      if (!all.length) {
-        container.innerHTML = `
-          <div class="flex items-center gap-xs text-green-700 bg-green-50 rounded p-sm">
-            <span class="material-symbols-outlined text-sm">check_circle</span>
-            <p class="text-sm font-bold">¡Todo el stock en orden!</p>
-          </div>`;
-        return;
-      }
-
-      container.innerHTML = all.map(p => {
-        const { cls, label } = BG_UI.stockBadge(p.stock);
-        return `
-          <div class="flex items-center justify-between p-2 rounded border border-outline-variant bg-surface-container-lowest">
-            <div>
-              <p class="font-bold text-sm truncate max-w-[130px]">${esc(p.nombre)}</p>
-              <p class="text-xs text-on-surface-variant">${esc(p.categoria || '—')}</p>
-            </div>
-            <div class="text-right flex-shrink-0">
-              <span class="text-xs font-bold ${cls} px-1.5 py-0.5 rounded">${label}</span>
-              <p class="text-xs text-on-surface-variant mt-0.5">${p.stock} uds.</p>
-            </div>
-          </div>`;
-      }).join('');
-    } catch (err) {
-      container.innerHTML = `<p class="text-xs text-on-surface-variant">No disponible</p>`;
-    }
-  }
-
-  /* Catálogo */
+  /* Catálogo público */
   async function loadCatalog(search = '') {
-    const grid = document.getElementById('catalog-grid');
+    const grid    = document.getElementById('catalog-grid');
     const countEl = document.getElementById('catalog-count');
     try {
-      const { data, count } = await BG.getProducts({ search, perPage: 10 });
-      countEl.textContent = `${count} artículos en inventario`;
+      const { data, count } = await BG.getProducts({ search, perPage: 20 });
+      countEl.textContent = `${count} artículos en catálogo`;
 
       if (!data.length) {
-        grid.innerHTML = `<div class="col-span-5 text-center py-8 text-on-surface-variant">Sin productos.</div>`;
+        grid.innerHTML = `<div class="col-span-5 text-center py-8 text-on-surface-variant">Sin productos disponibles.</div>`;
         return;
       }
 
@@ -406,7 +236,7 @@
           ? `<img src="${esc(p.imagen_url)}" alt="${esc(p.nombre)}" class="w-full h-full object-cover img-gray"/>`
           : `<div class="w-full h-full flex items-center justify-center bg-surface-container"><span class="material-symbols-outlined text-3xl text-outline">imagesmode</span></div>`;
         return `
-          <div class="flat-card group cursor-pointer rounded-xl overflow-hidden" onclick="window.location.href='pages/stock.html'">
+          <div class="flat-card rounded-xl overflow-hidden">
             <div class="aspect-square bg-surface-container overflow-hidden">${img}</div>
             <div class="p-sm">
               <h4 class="font-bold text-body-md truncate">${esc(p.nombre)}</h4>
@@ -423,16 +253,16 @@
     }
   }
 
-  /* Búsqueda catálogo con debounce */
+  /* Búsqueda con debounce */
   document.getElementById('catalog-search')?.addEventListener('input', BG_UI.debounce(e => {
     loadCatalog(e.target.value.trim());
   }, 400));
 
+  /* Si hay admin logueado, actualizar nav (muestra PANEL y avatar) */
+  BG_AUTH.updateNav();
+
   /* Init */
   loadStats();
-  loadSalesSummary();
-  loadRecentSales();
-  loadStockAlerts();
   loadCatalog();
 })();
 </script>
