@@ -1,0 +1,166 @@
+/* ═══════════════════════════════════════════════
+   BlancoGestión — main.css
+   Estilos compartidos entre todas las páginas
+═══════════════════════════════════════════════ */
+
+/* ── Reset & Base ── */
+*, *::before, *::after { box-sizing: border-box; }
+body { font-family: 'Inter', sans-serif; }
+
+/* ── Sidebar desktop ── */
+.sidebar-desktop { transition: transform 0.25s ease; }
+
+@media (max-width: 767px) {
+  .sidebar-desktop {
+    transform: translateX(-100%);
+  }
+  .sidebar-desktop.open {
+    transform: translateX(0);
+  }
+  .main-with-sidebar {
+    margin-left: 0 !important;
+  }
+}
+
+/* Nav item active */
+.nav-item-active {
+  background-color: #f1edec;
+  color: #1c1b1b;
+  font-weight: 700;
+}
+.nav-item-active .material-symbols-outlined {
+  font-variation-settings: 'FILL' 1;
+}
+
+/* ── Spinner ── */
+.spinner {
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+  border: 3px solid #e0e0e0;
+  border-top-color: #000;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── FAB ── */
+.fab {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  background: #000;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+  border: none;
+  cursor: pointer;
+  z-index: 100;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.fab:hover { transform: scale(1.06); box-shadow: 0 6px 20px rgba(0,0,0,0.3); }
+.fab:active { transform: scale(0.97); }
+
+/* ── Toast notifications ── */
+#toast-container {
+  position: fixed;
+  bottom: 96px;
+  right: 24px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 360px;
+}
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  background: #1c1b1b;
+  color: #f4f0ef;
+  font-size: 14px;
+  font-weight: 500;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+  animation: toast-in 0.25s ease;
+  pointer-events: auto;
+}
+.toast.success { background: #1c1b1b; border-left: 4px solid #4caf50; }
+.toast.error   { background: #1c1b1b; border-left: 4px solid #ba1a1a; }
+.toast.info    { background: #1c1b1b; border-left: 4px solid #2196f3; }
+.toast.warning { background: #1c1b1b; border-left: 4px solid #ff9800; }
+@keyframes toast-in {
+  from { opacity: 0; transform: translateX(40px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes toast-out {
+  from { opacity: 1; transform: translateX(0); }
+  to   { opacity: 0; transform: translateX(40px); }
+}
+
+/* ── Modal ── */
+.modal-overlay { transition: opacity 0.2s ease; }
+.modal-overlay.visible {
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+.modal-content { transition: transform 0.2s ease, opacity 0.2s ease; }
+.modal-overlay.visible .modal-content {
+  transform: scale(1) !important;
+  opacity: 1 !important;
+}
+
+/* ── Upload zone ── */
+.upload-zone {
+  min-height: 100px;
+  transition: background 0.15s;
+}
+.upload-zone.dragover {
+  background: #e5e2e1 !important;
+  border-color: #000 !important;
+}
+
+/* ── Flat cards (index) ── */
+.flat-card {
+  background: #fff;
+  border: 1px solid #c4c7c7;
+  transition: box-shadow 0.15s, transform 0.15s;
+}
+.flat-card:hover {
+  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+  transform: translateY(-2px);
+}
+
+/* ── Image grayscale ── */
+.img-gray { filter: grayscale(100%); transition: filter 0.2s; }
+.img-gray:hover { filter: grayscale(0%); }
+
+/* ── Stock badge colors ── */
+.badge-ok      { color: #2e7d32; background: #e8f5e9; }
+.badge-low     { color: #e65100; background: #fff3e0; }
+.badge-out     { color: #ba1a1a; background: #fdecea; }
+
+/* ── Table row hover ── */
+tbody tr:hover { background: #f7f3f2; }
+
+/* ── Scrollbar thin ── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #c4c7c7; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #747878; }
+
+/* ── Mobile overlay for sidebar ── */
+#sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  z-index: 40;
+}
+#sidebar-overlay.visible { display: block; }
