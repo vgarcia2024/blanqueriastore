@@ -11,20 +11,17 @@
      HELPERS INTERNOS
   ════════════════════════════════════ */
 
-  /** Obtener la sesión activa de Supabase */
   async function getSession() {
     const { data, error } = await BG.db.auth.getSession();
     if (error) return null;
     return data?.session ?? null;
   }
 
-  /** Obtener el usuario actual */
   async function getUser() {
     const session = await getSession();
     return session?.user ?? null;
   }
 
-  /** Verificar si el usuario tiene rol admin (via user_metadata) */
   async function isAdmin() {
     const user = await getUser();
     if (!user) return false;
@@ -42,46 +39,45 @@
   }
 
   async function logout() {
-  await BG.db.auth.signOut();
-  window.location.href = '/';  // ← esto sí funciona en Vercel
-}
+    await BG.db.auth.signOut();
+    window.location.href = '/';
+  }
 
   /* ════════════════════════════════════
      PROTECCIÓN DE RUTAS
   ════════════════════════════════════ */
 
-  /**
-   * Llamar al inicio de panel.html.
-   * Si no hay sesión → login. Si no es admin → index.
-   */
-     async function requireAdmin() {
-     const session = await getSession();
-     if (!session) {
-       window.location.href = '/';  
-       return false;
-     }
-     const admin = await isAdmin();
-     if (!admin) {
-       window.location.href = '/index.html';
-       return false;
-     }
-     return true;
-   }
+  async function requireAdmin() {
+    const session = await getSession();
+    if (!session) {
+      window.location.href = '/login.html';
+      return false;
+    }
+    const admin = await isAdmin();
+    if (!admin) {
+      window.location.href = '/';
+      return false;
+    }
+    return true;
+  }
+
   /* ════════════════════════════════════
      NAV: mostrar/ocultar enlace PANEL
      y actualizar botón login/logout
   ════════════════════════════════════ */
 
   async function updateNav() {
-    const admin = await isAdmin();
-    const user  = await getUser();
+    // Una sola llamada a Supabase, reutilizamos la sesión
+    const session = await getSession();
+    const user    = session?.user ?? null;
+    const admin   = user ? user.user_metadata?.role === 'admin' : false;
 
-    // Mostrar/ocultar links de panel en sidebar y topnav
+    // Mostrar/ocultar links de panel
     document.querySelectorAll('[data-admin-only]').forEach(el => {
       el.style.display = admin ? '' : 'none';
     });
 
-    // Ocultar links de Stock y Ventas (reemplazados por Panel)
+    // Ocultar links que no deben verse si es admin
     document.querySelectorAll('[data-hide-if-admin]').forEach(el => {
       el.style.display = admin ? 'none' : '';
     });
@@ -90,12 +86,12 @@
     const btnAccount = document.getElementById('btn-account');
     if (btnAccount) {
       if (user) {
-        btnAccount.title = user.email;
+        btnAccount.title   = user.email;
         btnAccount.onclick = logout;
         btnAccount.innerHTML = `<span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1">account_circle</span>`;
       } else {
-        btnAccount.title = 'Iniciar sesión';
-       btnAccount.onclick = () => { window.location.href = '/login.html'; };
+        btnAccount.title   = 'Iniciar sesión';
+        btnAccount.onclick = () => { window.location.href = '/login.html'; };
         btnAccount.innerHTML = `<span class="material-symbols-outlined">login</span>`;
       }
     }
@@ -113,8 +109,7 @@
             <p class="text-[10px] text-on-surface-variant truncate">${user.email}</p>
           </div>
           <button onclick="BG_AUTH.logout()" title="Cerrar sesión"
-            class="p-1.5 hover:bg-surface-container-highest rounded-full transition-colors flex-shrink-0"
-            title="Cerrar sesión">
+            class="p-1.5 hover:bg-surface-container-highest rounded-full transition-colors flex-shrink-0">
             <span class="material-symbols-outlined text-sm text-on-surface-variant">logout</span>
           </button>
         </div>`;
