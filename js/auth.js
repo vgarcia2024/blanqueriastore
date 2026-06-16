@@ -43,8 +43,8 @@
 
   async function logout() {
   await BG.db.auth.signOut();
-  window.location.href = '/index.html';
-  }
+  window.location.href = '/';  // ← esto sí funciona en Vercel
+}
 
   /* ════════════════════════════════════
      PROTECCIÓN DE RUTAS
