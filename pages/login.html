@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>BlancoGestión — Iniciar sesión</title>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="css/main.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="env-config.js" onerror="console.warn('env-config.js no encontrado.')"></script>
+  <script id="tailwind-config">
+    tailwind.config = {
+      darkMode:"class",
+      theme:{ extend:{
+        colors:{
+          "surface-container":"#f1edec","on-primary":"#ffffff","secondary":"#5f5e5e",
+          "surface-variant":"#e5e2e1","error":"#ba1a1a","on-surface":"#1c1b1b",
+          "surface":"#fdf8f8","on-background":"#1c1b1b","primary":"#000000",
+          "primary-container":"#1c1b1b","secondary-container":"#e4e2e1","outline-variant":"#c4c7c7",
+          "surface-dim":"#ddd9d8","inverse-surface":"#313030","on-secondary-container":"#656464",
+          "tertiary":"#000000","surface-container-highest":"#e5e2e1","inverse-primary":"#c8c6c5",
+          "surface-container-low":"#f7f3f2","inverse-on-surface":"#f4f0ef",
+          "surface-container-lowest":"#ffffff","background":"#fdf8f8","outline":"#747878",
+          "on-error-container":"#93000a","surface-bright":"#fdf8f8",
+          "on-surface-variant":"#444748","on-secondary":"#ffffff","on-primary-container":"#858383",
+          "on-error":"#ffffff","tertiary-fixed":"#e6e2df"
+        },
+        borderRadius:{"DEFAULT":"0.125rem","lg":"0.25rem","xl":"0.5rem","full":"0.75rem"},
+        spacing:{"md":"24px","sm":"12px","xl":"80px","container-max":"1280px","base":"8px","xs":"4px","lg":"48px","gutter":"24px"},
+        fontFamily:{"headline-md":["Inter"],"body-lg":["Inter"],"numeric-data":["Inter"],"headline-sm":["Inter"],"headline-lg":["Inter"],"label-caps":["Inter"],"body-md":["Inter"]},
+        fontSize:{
+          "headline-md":["24px",{lineHeight:"1.3",fontWeight:"600"}],
+          "body-lg":["16px",{lineHeight:"1.6",fontWeight:"400"}],
+          "numeric-data":["14px",{lineHeight:"1.0",fontWeight:"500"}],
+          "headline-sm":["20px",{lineHeight:"1.4",fontWeight:"600"}],
+          "headline-lg":["32px",{lineHeight:"1.2",letterSpacing:"-0.02em",fontWeight:"700"}],
+          "label-caps":["12px",{lineHeight:"1.0",letterSpacing:"0.05em",fontWeight:"700"}],
+          "body-md":["14px",{lineHeight:"1.5",fontWeight:"400"}]
+        }
+      }}
+    }
+  </script>
+</head>
+<body class="bg-background text-on-surface min-h-screen flex items-center justify-center p-4">
+
+<div class="w-full max-w-sm">
+
+  <!-- Logo -->
+  <div class="text-center mb-lg">
+    <a href="index.html" class="inline-block">
+      <h1 class="font-bold text-primary text-2xl tracking-tight">BlancoGestión</h1>
+      <p class="text-on-surface-variant text-sm mt-1">Panel de administración</p>
+    </a>
+  </div>
+
+  <!-- Card -->
+  <div class="bg-surface-container-lowest border border-outline-variant rounded-xl shadow-sm overflow-hidden">
+
+    <div class="px-md pt-md pb-sm border-b border-outline-variant">
+      <h2 class="font-bold text-lg text-primary">Iniciar sesión</h2>
+      <p class="text-sm text-on-surface-variant mt-0.5">Ingresá con tu cuenta de administrador</p>
+    </div>
+
+    <form id="login-form" class="p-md space-y-md">
+
+      <!-- Email -->
+      <div>
+        <label for="login-email" class="block font-label-caps text-label-caps text-on-surface-variant mb-1">
+          CORREO ELECTRÓNICO
+        </label>
+        <div class="relative">
+          <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-sm">mail</span>
+          <input
+            id="login-email"
+            type="email"
+            required
+            autocomplete="email"
+            placeholder="admin@tutienda.com"
+            class="w-full pl-10 pr-4 py-2.5 bg-surface border border-outline-variant rounded-lg focus:outline-none focus:border-primary text-body-md transition-colors"
+          />
+        </div>
+      </div>
+
+      <!-- Contraseña -->
+      <div>
+        <label for="login-password" class="block font-label-caps text-label-caps text-on-surface-variant mb-1">
+          CONTRASEÑA
+        </label>
+        <div class="relative">
+          <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-sm">lock</span>
+          <input
+            id="login-password"
+            type="password"
+            required
+            autocomplete="current-password"
+            placeholder="••••••••"
+            class="w-full pl-10 pr-12 py-2.5 bg-surface border border-outline-variant rounded-lg focus:outline-none focus:border-primary text-body-md transition-colors"
+          />
+          <button type="button" id="toggle-password"
+            class="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-on-surface transition-colors">
+            <span class="material-symbols-outlined text-sm" id="toggle-password-icon">visibility</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Error message -->
+      <div id="login-error" class="hidden flex items-center gap-xs bg-red-50 border border-red-200 text-red-700 rounded-lg px-sm py-2 text-sm">
+        <span class="material-symbols-outlined text-sm flex-shrink-0">error</span>
+        <span id="login-error-msg">Error al iniciar sesión.</span>
+      </div>
+
+      <!-- Submit -->
+      <button
+        id="login-btn"
+        type="submit"
+        class="w-full py-2.5 bg-primary text-on-primary font-bold rounded-lg hover:opacity-90 active:scale-95 transition-all flex items-center justify-center gap-xs"
+      >
+        <span class="material-symbols-outlined text-sm">login</span>
+        Ingresar al panel
+      </button>
+
+    </form>
+  </div>
+
+  <!-- Volver al inicio -->
+  <p class="text-center mt-md text-sm text-on-surface-variant">
+    <a href="index.html" class="hover:text-on-surface transition-colors underline underline-offset-2">
+      ← Volver al inicio
+    </a>
+  </p>
+
+</div>
+
+<div id="toast-container"></div>
+
+<script src="js/supabase.js"></script>
+<script src="js/main.js"></script>
+<script src="js/auth.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  /* Redirigir si ya hay sesión activa */
+  BG_AUTH.getSession().then(session => {
+    if (session) {
+      BG_AUTH.isAdmin().then(admin => {
+        if (admin) window.location.href = 'pages/panel.html';
+      });
+    }
+  });
+
+  /* Toggle mostrar/ocultar contraseña */
+  document.getElementById('toggle-password').addEventListener('click', () => {
+    const input = document.getElementById('login-password');
+    const icon  = document.getElementById('toggle-password-icon');
+    if (input.type === 'password') {
+      input.type = 'text';
+      icon.textContent = 'visibility_off';
+    } else {
+      input.type = 'password';
+      icon.textContent = 'visibility';
+    }
+  });
+
+  /* Formulario de login */
+  document.getElementById('login-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const email    = document.getElementById('login-email').value.trim();
+    const password = document.getElementById('login-password').value;
+    const btn      = document.getElementById('login-btn');
+    const errorBox = document.getElementById('login-error');
+    const errorMsg = document.getElementById('login-error-msg');
+
+    errorBox.classList.add('hidden');
+    btn.disabled = true;
+    btn.innerHTML = `<span class="spinner" style="width:18px;height:18px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:6px"></span> Ingresando...`;
+
+    try {
+      await BG_AUTH.login(email, password);
+
+      /* Verificar que sea admin */
+      const admin = await BG_AUTH.isAdmin();
+      if (!admin) {
+        await BG_AUTH.logout();
+        throw new Error('Tu cuenta no tiene permisos de administrador.');
+      }
+
+      BG_UI.toast('¡Bienvenido!', 'success');
+      setTimeout(() => { window.location.href = 'pages/panel.html'; }, 600);
+
+    } catch (err) {
+      errorMsg.textContent = err.message === 'Invalid login credentials'
+        ? 'Email o contraseña incorrectos.'
+        : err.message;
+      errorBox.classList.remove('hidden');
+      btn.disabled = false;
+      btn.innerHTML = `<span class="material-symbols-outlined text-sm">login</span> Ingresar al panel`;
+    }
+  });
+
+})();
+</script>
+</body>
+</html>
