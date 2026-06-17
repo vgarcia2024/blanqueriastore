@@ -4,7 +4,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { items } = req.body;
+  const { items, userId } = req.body;
 
   if (!items || !items.length) {
     return res.status(400).json({ error: 'No items provided' });
@@ -12,17 +12,20 @@ export default async function handler(req, res) {
 
   const preference = {
     items: items.map(item => ({
+      id: String(item.id),
       title: item.nombre,
       quantity: item.cantidad,
       unit_price: parseFloat(item.precio),
       currency_id: 'ARS',
     })),
+    external_reference: userId || 'guest', // ← asocia el pago al usuario
     back_urls: {
       success: 'https://blanqueriastore.vercel.app/pages/pago-exitoso.html',
       failure: 'https://blanqueriastore.vercel.app/pages/pago-fallido.html',
       pending: 'https://blanqueriastore.vercel.app/pages/pago-exitoso.html',
     },
     auto_return: 'approved',
+    notification_url: 'https://blanqueriastore.vercel.app/api/webhook', // ← webhook
   };
 
   try {
@@ -42,9 +45,8 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: 'Error creando preferencia', detail: data });
     }
 
-    // init_point = producción, sandbox_init_point = pruebas
     return res.status(200).json({
-      init_point: data.sandbox_init_point, // ← cambiá a data.init_point cuando vayas a producción
+      init_point: data.sandbox_init_point,
       preference_id: data.id,
     });
 
