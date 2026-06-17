@@ -4,16 +4,49 @@
   <meta charset="utf-8"/>
   <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
   <title>Mi cuenta — BlancoGestión</title>
-  <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="../env-config.js" onerror="console.warn('env-config.js no encontrado.')"></script>
   <link rel="stylesheet" href="../css/main.css"/>
+  <script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "surface-container":"#f1edec","on-primary":"#ffffff","secondary":"#5f5e5e",
+            "surface-variant":"#e5e2e1","error":"#ba1a1a","on-surface":"#1c1b1b",
+            "surface":"#fdf8f8","on-background":"#1c1b1b","primary":"#000000",
+            "primary-container":"#1c1b1b","secondary-container":"#e4e2e1","outline-variant":"#c4c7c7",
+            "surface-dim":"#ddd9d8","inverse-surface":"#313030","on-secondary-container":"#656464",
+            "tertiary":"#000000","surface-container-highest":"#e5e2e1","inverse-primary":"#c8c6c5",
+            "surface-container-low":"#f7f3f2","inverse-on-surface":"#f4f0ef",
+            "surface-container-lowest":"#ffffff","background":"#fdf8f8","outline":"#747878",
+            "on-error-container":"#93000a","surface-bright":"#fdf8f8",
+            "on-surface-variant":"#444748","on-secondary":"#ffffff","on-primary-container":"#858383",
+            "on-error":"#ffffff","tertiary-fixed":"#e6e2df"
+          },
+          borderRadius:{"DEFAULT":"0.125rem","lg":"0.25rem","xl":"0.5rem","full":"0.75rem"},
+          spacing:{"md":"24px","sm":"12px","xl":"80px","container-max":"1280px","base":"8px","xs":"4px","lg":"48px","gutter":"24px"},
+          fontFamily:{"headline-md":["Inter"],"body-lg":["Inter"],"numeric-data":["Inter"],"headline-sm":["Inter"],"headline-lg":["Inter"],"label-caps":["Inter"],"body-md":["Inter"]},
+          fontSize:{
+            "headline-md":["24px",{lineHeight:"1.3",fontWeight:"600"}],
+            "body-lg":["16px",{lineHeight:"1.6",fontWeight:"400"}],
+            "numeric-data":["14px",{lineHeight:"1.0",fontWeight:"500"}],
+            "headline-sm":["20px",{lineHeight:"1.4",fontWeight:"600"}],
+            "headline-lg":["32px",{lineHeight:"1.2",letterSpacing:"-0.02em",fontWeight:"700"}],
+            "label-caps":["12px",{lineHeight:"1.0",letterSpacing:"0.05em",fontWeight:"700"}],
+            "body-md":["14px",{lineHeight:"1.5",fontWeight:"400"}]
+          }
+        }
+      }
+    }
+  </script>
   <style>
     body { font-family: 'Inter', sans-serif; }
 
-    /* Dropdown del avatar */
     #account-dropdown {
       display: none;
       position: absolute;
@@ -48,279 +81,319 @@
     #account-dropdown .menu-divider { height: 1px; background: #f0f0f0; margin: 2px 0; }
     #account-dropdown .danger { color: #dc2626; }
 
-    /* Tabs */
     .tab-btn { transition: all 0.15s; }
-    .tab-btn.active {
-      background: #000;
-      color: #fff;
-    }
+    .tab-btn.active { background: #000; color: #fff; }
     .tab-panel { display: none; }
     .tab-panel.active { display: block; }
   </style>
 </head>
-<body class="min-h-screen bg-gray-50">
+<body class="font-body-md text-body-md bg-background text-on-surface">
 
-  <!-- Nav -->
-  <nav class="fixed top-0 left-0 w-full z-50 bg-black text-white h-16">
-    <div class="flex justify-between items-center w-full px-6 h-full max-w-5xl mx-auto">
-      <a href="/index.html" class="text-lg font-bold tracking-tight">BlancoGestión</a>
-      <a href="/index.html" class="hidden md:flex items-center gap-1 text-xs font-bold text-white/70 hover:text-white transition-colors ml-6">
-        <span class="material-symbols-outlined" style="font-size:18px">home</span>
-        Inicio
+<!-- TopNavBar — igual al index -->
+<nav class="fixed top-0 left-0 w-full z-50 bg-primary text-on-primary h-16">
+  <div class="flex justify-between items-center w-full px-gutter h-full max-w-container-max mx-auto">
+    <div class="flex items-center gap-base">
+      <span class="text-headline-sm font-bold text-on-primary tracking-tight">BlancoGestión</span>
+    </div>
+    <div class="hidden md:flex items-center gap-md">
+      <a class="text-on-primary/70 hover:text-on-primary transition-colors font-bold text-label-caps" href="/index.html">INICIO</a>
+      <a id="nav-panel-link" data-admin-only style="display:none"
+        class="text-on-primary/70 hover:text-on-primary transition-colors text-label-caps font-bold" href="/pages/panel.html">PANEL</a>
+    </div>
+    <div class="flex items-center gap-sm">
+
+      <!-- Botón "Ingresar" (visible si no hay sesión) -->
+      <a id="btn-login" href="/pages/login.html" style="display:none"
+        class="flex items-center gap-1 px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 transition-colors text-xs font-bold text-on-primary">
+        <span class="material-symbols-outlined" style="font-size:18px">login</span>
+        <span class="hidden md:inline">Ingresar</span>
       </a>
-      <div class="flex items-center gap-3">
-        <span id="nav-email" class="text-xs text-white/60 hidden md:block"></span>
 
-        <!-- Botón avatar con dropdown -->
-        <div class="relative" id="account-menu-wrap">
-          <button id="account-avatar-btn"
-            class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 transition-colors text-sm font-semibold"
-            onclick="toggleAccountMenu(event)">
-            <span class="material-symbols-outlined text-base" style="font-size:18px">account_circle</span>
-            <span id="avatar-name" class="hidden md:block max-w-[100px] truncate text-xs"></span>
-            <span class="material-symbols-outlined text-xs" style="font-size:14px" id="avatar-chevron">expand_more</span>
-          </button>
-
-          <!-- Dropdown -->
-          <div id="account-dropdown">
-            <a href="/pages/mi-cuenta.html#perfil" onclick="switchTab('perfil'); closeAccountMenu()">
-              <span class="material-symbols-outlined" style="font-size:18px">person</span>
-              Mi perfil
-            </a>
-            <a href="/pages/mi-cuenta.html#pedidos" onclick="switchTab('pedidos'); closeAccountMenu()">
-              <span class="material-symbols-outlined" style="font-size:18px">receipt_long</span>
-              Mis pedidos
-            </a>
-            <div class="menu-divider"></div>
-            <button class="danger" onclick="BG_AUTH.logout()">
-              <span class="material-symbols-outlined" style="font-size:18px">logout</span>
-              Cerrar sesión
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </nav>
-
-  <main class="pt-24 pb-16 max-w-2xl mx-auto px-4">
-
-    <!-- Header -->
-    <div class="mb-8">
-      <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Mi cuenta</p>
-      <h1 id="welcome-name" class="text-2xl font-bold text-black">Hola 👋</h1>
-    </div>
-
-    <!-- Tabs -->
-    <div class="flex gap-2 mb-5 p-1 bg-gray-100 rounded-xl w-fit">
-      <button id="tab-perfil" class="tab-btn active text-xs font-bold px-4 py-2 rounded-lg" onclick="switchTab('perfil')">
-        Mi perfil
-      </button>
-      <button id="tab-pedidos" class="tab-btn text-xs font-bold px-4 py-2 rounded-lg text-gray-500" onclick="switchTab('pedidos')">
-        Mis pedidos
-      </button>
-    </div>
-
-    <!-- Panel: Perfil -->
-    <div id="panel-perfil" class="tab-panel active bg-white rounded-2xl border border-gray-200 p-6">
-      <h2 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Mis datos</h2>
-      <div class="flex flex-col gap-4">
-        <div>
-          <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">Nombre</label>
-          <input id="p-nombre" type="text" placeholder="Tu nombre"
-            class="w-full px-3.5 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-black transition-colors"/>
-        </div>
-        <div>
-          <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">Email</label>
-          <input id="p-email" type="email" disabled
-            class="w-full px-3.5 py-2.5 border border-gray-100 rounded-lg text-sm bg-gray-50 text-gray-400 cursor-not-allowed"/>
-        </div>
-        <div>
-          <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">Teléfono</label>
-          <input id="p-telefono" type="tel" placeholder="11 1234-5678"
-            class="w-full px-3.5 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-black transition-colors"/>
-        </div>
-        <p id="profile-msg" class="text-xs hidden"></p>
-        <button onclick="saveProfile()"
-          class="w-full bg-black text-white py-2.5 rounded-lg text-sm font-bold hover:opacity-80 active:scale-[0.98] transition-all">
-          Guardar cambios
+      <!-- Dropdown de cuenta -->
+      <div class="relative" id="account-menu-wrap" style="display:none">
+        <button
+          class="flex items-center gap-1 px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 transition-colors text-on-primary"
+          onclick="toggleAccountMenu(event)">
+          <span class="material-symbols-outlined" style="font-size:20px">account_circle</span>
+          <span id="avatar-name" class="hidden md:block max-w-[90px] truncate text-xs font-bold"></span>
+          <span class="material-symbols-outlined" style="font-size:14px" id="avatar-chevron">expand_more</span>
         </button>
+        <div id="account-dropdown">
+          <a href="/pages/mi-cuenta.html#perfil">
+            <span class="material-symbols-outlined" style="font-size:18px">person</span>
+            Mi perfil
+          </a>
+          <a href="/pages/mi-cuenta.html#pedidos">
+            <span class="material-symbols-outlined" style="font-size:18px">receipt_long</span>
+            Mis pedidos
+          </a>
+          <div class="menu-divider"></div>
+          <button class="danger" onclick="BG_AUTH.logout()">
+            <span class="material-symbols-outlined" style="font-size:18px">logout</span>
+            Cerrar sesión
+          </button>
+        </div>
       </div>
-    </div>
 
-    <!-- Panel: Pedidos -->
-    <div id="panel-pedidos" class="tab-panel bg-white rounded-2xl border border-gray-200 p-6">
-      <h2 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Mis pedidos</h2>
-      <div id="pedidos-list">
-        <p class="text-sm text-gray-400 text-center py-6">Cargando pedidos...</p>
+      <button class="md:hidden p-2" onclick="toggleSidebar()">
+        <span class="material-symbols-outlined">menu</span>
+      </button>
+    </div>
+  </div>
+</nav>
+
+<!-- Mobile sidebar -->
+<aside id="sidebar" class="fixed left-0 top-0 flex flex-col p-md h-screen w-64 border-r border-outline-variant bg-surface z-50 md:hidden -translate-x-full transition-transform duration-200">
+  <div class="mb-lg mt-16">
+    <h1 class="font-bold text-primary text-lg">BlancoGestión</h1>
+    <p class="text-on-surface-variant text-sm">Mi cuenta</p>
+  </div>
+  <nav class="flex flex-col gap-xs">
+    <a class="flex items-center gap-sm p-sm rounded-lg text-on-surface-variant hover:bg-surface-container-low" href="/index.html">
+      <span class="material-symbols-outlined">home</span><span>Inicio</span>
+    </a>
+    <a id="mobile-panel-link" data-admin-only style="display:none"
+      class="flex items-center gap-sm p-sm rounded-lg text-on-surface-variant hover:bg-surface-container-low" href="/pages/panel.html">
+      <span class="material-symbols-outlined">admin_panel_settings</span><span>Panel</span>
+    </a>
+    <a id="mobile-cuenta-link"
+      class="flex items-center gap-sm p-sm rounded-lg font-bold bg-surface-container" href="/pages/mi-cuenta.html#perfil">
+      <span class="material-symbols-outlined">person</span><span>Mi perfil</span>
+    </a>
+    <a id="mobile-pedidos-link"
+      class="flex items-center gap-sm p-sm rounded-lg text-on-surface-variant hover:bg-surface-container-low" href="/pages/mi-cuenta.html#pedidos">
+      <span class="material-symbols-outlined">receipt_long</span><span>Mis pedidos</span>
+    </a>
+    <button onclick="BG_AUTH.logout()"
+      class="flex items-center gap-sm p-sm rounded-lg text-on-surface-variant hover:bg-surface-container-low w-full text-left">
+      <span class="material-symbols-outlined">logout</span><span>Cerrar sesión</span>
+    </button>
+  </nav>
+</aside>
+
+<main class="pt-24 pb-16 max-w-2xl mx-auto px-4">
+
+  <div class="mb-8">
+    <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Mi cuenta</p>
+    <h1 id="welcome-name" class="text-2xl font-bold text-black">Hola 👋</h1>
+  </div>
+
+  <!-- Tabs -->
+  <div class="flex gap-2 mb-5 p-1 bg-gray-100 rounded-xl w-fit">
+    <button id="tab-perfil" class="tab-btn active text-xs font-bold px-4 py-2 rounded-lg" onclick="switchTab('perfil')">
+      Mi perfil
+    </button>
+    <button id="tab-pedidos" class="tab-btn text-xs font-bold px-4 py-2 rounded-lg text-gray-500" onclick="switchTab('pedidos')">
+      Mis pedidos
+    </button>
+  </div>
+
+  <!-- Panel: Perfil -->
+  <div id="panel-perfil" class="tab-panel active bg-white rounded-2xl border border-gray-200 p-6">
+    <h2 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Mis datos</h2>
+    <div class="flex flex-col gap-4">
+      <div>
+        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">Nombre</label>
+        <input id="p-nombre" type="text" placeholder="Tu nombre"
+          class="w-full px-3.5 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-black transition-colors"/>
       </div>
+      <div>
+        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">Email</label>
+        <input id="p-email" type="email" disabled
+          class="w-full px-3.5 py-2.5 border border-gray-100 rounded-lg text-sm bg-gray-50 text-gray-400 cursor-not-allowed"/>
+      </div>
+      <div>
+        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">Teléfono</label>
+        <input id="p-telefono" type="tel" placeholder="11 1234-5678"
+          class="w-full px-3.5 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-black transition-colors"/>
+      </div>
+      <p id="profile-msg" class="text-xs hidden"></p>
+      <button onclick="saveProfile()"
+        class="w-full bg-black text-white py-2.5 rounded-lg text-sm font-bold hover:opacity-80 active:scale-[0.98] transition-all">
+        Guardar cambios
+      </button>
     </div>
+  </div>
 
-  </main>
+  <!-- Panel: Pedidos -->
+  <div id="panel-pedidos" class="tab-panel bg-white rounded-2xl border border-gray-200 p-6">
+    <h2 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Mis pedidos</h2>
+    <div id="pedidos-list">
+      <p class="text-sm text-gray-400 text-center py-6">Cargando pedidos...</p>
+    </div>
+  </div>
 
-  <script src="../js/supabase.js"></script>
-  <script src="../js/auth.js"></script>
-  <script>
-    let currentProfile = null;
+</main>
 
-    /* ── Tabs ── */
-    function switchTab(name) {
-      ['perfil', 'pedidos'].forEach(t => {
-        document.getElementById('tab-' + t).classList.toggle('active', t === name);
-        document.getElementById('tab-' + t).classList.toggle('text-gray-500', t !== name);
-        document.getElementById('panel-' + t).classList.toggle('active', t === name);
-      });
-      // actualizar hash sin recargar
-      history.replaceState(null, '', '#' + name);
-    }
+<script src="../js/supabase.js"></script>
+<script src="../js/auth.js"></script>
+<script>
+  let currentProfile = null;
 
-    /* ── Dropdown de cuenta ── */
-    function toggleAccountMenu(e) {
-      e.stopPropagation();
-      const dd = document.getElementById('account-dropdown');
-      const chevron = document.getElementById('avatar-chevron');
-      const isOpen = dd.classList.toggle('open');
-      chevron.textContent = isOpen ? 'expand_less' : 'expand_more';
-    }
-    function closeAccountMenu() {
-      document.getElementById('account-dropdown').classList.remove('open');
-      document.getElementById('avatar-chevron').textContent = 'expand_more';
-    }
-    document.addEventListener('click', (e) => {
-      if (!document.getElementById('account-menu-wrap').contains(e.target)) {
-        closeAccountMenu();
-      }
+  /* ── Sidebar mobile ── */
+  function toggleSidebar() {
+    const sb = document.getElementById('sidebar');
+    sb.classList.toggle('-translate-x-full');
+  }
+
+  /* ── Tabs ── */
+  function switchTab(name) {
+    ['perfil', 'pedidos'].forEach(t => {
+      document.getElementById('tab-' + t).classList.toggle('active', t === name);
+      document.getElementById('tab-' + t).classList.toggle('text-gray-500', t !== name);
+      document.getElementById('panel-' + t).classList.toggle('active', t === name);
     });
+    history.replaceState(null, '', '#' + name);
+  }
 
-    /* ── Init ── */
-    async function init() {
-      const session = await BG_AUTH.getSession();
-      if (!session) {
-        window.location.href = '/pages/login.html';
-        return;
-      }
+  /* ── Dropdown de cuenta ── */
+  function toggleAccountMenu(e) {
+    e.stopPropagation();
+    const dd = document.getElementById('account-dropdown');
+    const chevron = document.getElementById('avatar-chevron');
+    const isOpen = dd.classList.toggle('open');
+    chevron.textContent = isOpen ? 'expand_less' : 'expand_more';
+  }
+  document.addEventListener('click', (e) => {
+    if (!document.getElementById('account-menu-wrap')?.contains(e.target)) {
+      document.getElementById('account-dropdown')?.classList.remove('open');
+      const ch = document.getElementById('avatar-chevron');
+      if (ch) ch.textContent = 'expand_more';
+    }
+  });
 
+  /* ── Init ── */
+  async function init() {
+    const session = await BG_AUTH.getSession();
+    if (!session) {
+      window.location.href = '/pages/login.html';
+      return;
+    }
+
+    currentProfile = await BG_AUTH.getProfile();
+
+    if (!currentProfile) {
+      const user = session.user;
+      await BG.db.from('profiles').upsert({
+        id: user.id,
+        email: user.email,
+        nombre: user.user_metadata?.nombre || '',
+        role: user.user_metadata?.role || 'user'
+      });
       currentProfile = await BG_AUTH.getProfile();
-
-      if (!currentProfile) {
-        const user = session.user;
-        await BG.db.from('profiles').upsert({
-          id: user.id,
-          email: user.email,
-          nombre: user.user_metadata?.nombre || '',
-          role: user.user_metadata?.role || 'user'
-        });
-        currentProfile = await BG_AUTH.getProfile();
-      }
-
-      if (!currentProfile) {
-        window.location.href = '/pages/login.html';
-        return;
-      }
-
-      if (currentProfile.role === 'admin') {
-        window.location.href = '/pages/panel.html';
-        return;
-      }
-
-      // Rellenar datos
-      const nombre = currentProfile.nombre || 'bienvenido';
-      document.getElementById('welcome-name').textContent = `Hola, ${nombre} 👋`;
-      document.getElementById('nav-email').textContent = currentProfile.email;
-      document.getElementById('avatar-name').textContent = nombre;
-      document.getElementById('p-nombre').value = currentProfile.nombre || '';
-      document.getElementById('p-email').value = currentProfile.email || '';
-      document.getElementById('p-telefono').value = currentProfile.telefono || '';
-
-      loadPedidos(currentProfile.id);
-
-      // Activar tab según hash
-      const hash = window.location.hash.replace('#', '');
-      if (hash === 'pedidos') switchTab('pedidos');
     }
 
-    /* ── Guardar perfil → redirige al index ── */
-    async function saveProfile() {
-      const nombre = document.getElementById('p-nombre').value.trim();
-      const telefono = document.getElementById('p-telefono').value.trim();
-      const msgEl = document.getElementById('profile-msg');
-      msgEl.classList.add('hidden');
-
-      if (!nombre) {
-        msgEl.textContent = 'El nombre no puede estar vacío.';
-        msgEl.className = 'text-xs text-red-500';
-        msgEl.classList.remove('hidden');
-        return;
-      }
-
-      const btn = document.querySelector('button[onclick="saveProfile()"]');
-      btn.disabled = true;
-      btn.textContent = 'Guardando...';
-
-      const { error } = await BG.db
-        .from('profiles')
-        .update({ nombre, telefono })
-        .eq('id', currentProfile.id);
-
-      if (error) {
-        msgEl.textContent = 'Error al guardar. Intentá de nuevo.';
-        msgEl.className = 'text-xs text-red-500';
-        msgEl.classList.remove('hidden');
-        btn.disabled = false;
-        btn.textContent = 'Guardar cambios';
-      } else {
-        // Éxito → redirigir al index
-        window.location.href = '/index.html';
-      }
+    if (!currentProfile) {
+      window.location.href = '/pages/login.html';
+      return;
     }
 
-    /* ── Pedidos ── */
-    async function loadPedidos(userId) {
-      const listEl = document.getElementById('pedidos-list');
-
-      const { data, error } = await BG.db
-        .from('ventas')
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false })
-        .limit(20);
-
-      if (error || !data?.length) {
-        listEl.innerHTML = `
-          <div class="text-center py-8">
-            <span class="material-symbols-outlined text-3xl text-gray-300">receipt_long</span>
-            <p class="text-sm text-gray-400 mt-2">Todavía no tenés pedidos.</p>
-            <a href="/index.html" class="inline-block mt-3 text-xs font-bold text-black underline">Ver productos</a>
-          </div>`;
-        return;
-      }
-
-      listEl.innerHTML = data.map(v => {
-        const fecha = new Date(v.created_at).toLocaleDateString('es-AR', {
-          day: '2-digit', month: 'short', year: 'numeric'
-        });
-        const estadoBadge = {
-          'aprobado':  'bg-green-100 text-green-700',
-          'pendiente': 'bg-yellow-100 text-yellow-700',
-          'rechazado': 'bg-red-100 text-red-700',
-        }[v.estado] || 'bg-gray-100 text-gray-600';
-
-        return `
-          <div class="flex items-center justify-between py-3 border-b border-gray-100 last:border-0">
-            <div>
-              <p class="text-sm font-bold text-black">#${String(v.id).slice(0,8).toUpperCase()}</p>
-              <p class="text-xs text-gray-400">${fecha}</p>
-            </div>
-            <div class="flex items-center gap-3">
-              <span class="text-sm font-mono font-bold">$${Number(v.total || 0).toLocaleString('es-AR')}</span>
-              <span class="text-[11px] font-bold px-2 py-0.5 rounded-full ${estadoBadge}">
-                ${v.estado || 'pendiente'}
-              </span>
-            </div>
-          </div>`;
-      }).join('');
+    if (currentProfile.role === 'admin') {
+      window.location.href = '/pages/panel.html';
+      return;
     }
 
-    init();
-  </script>
+    const nombre = currentProfile.nombre || 'bienvenido';
+    document.getElementById('welcome-name').textContent = `Hola, ${nombre} 👋`;
+    document.getElementById('avatar-name').textContent = nombre;
+    document.getElementById('account-menu-wrap').style.display = 'block';
+    document.getElementById('btn-login').style.display = 'none';
+    document.getElementById('p-nombre').value = currentProfile.nombre || '';
+    document.getElementById('p-email').value = currentProfile.email || '';
+    document.getElementById('p-telefono').value = currentProfile.telefono || '';
+
+    // Tab según hash
+    const hash = window.location.hash.replace('#', '');
+    if (hash === 'pedidos') switchTab('pedidos');
+
+    loadPedidos(currentProfile.id);
+
+    // Nav admin links
+    BG_AUTH.updateNav();
+  }
+
+  /* ── Guardar perfil → redirige al index ── */
+  async function saveProfile() {
+    const nombre = document.getElementById('p-nombre').value.trim();
+    const telefono = document.getElementById('p-telefono').value.trim();
+    const msgEl = document.getElementById('profile-msg');
+    msgEl.classList.add('hidden');
+
+    if (!nombre) {
+      msgEl.textContent = 'El nombre no puede estar vacío.';
+      msgEl.className = 'text-xs text-red-500';
+      msgEl.classList.remove('hidden');
+      return;
+    }
+
+    const btn = document.querySelector('button[onclick="saveProfile()"]');
+    btn.disabled = true;
+    btn.textContent = 'Guardando...';
+
+    const { error } = await BG.db
+      .from('profiles')
+      .update({ nombre, telefono })
+      .eq('id', currentProfile.id);
+
+    if (error) {
+      msgEl.textContent = 'Error al guardar. Intentá de nuevo.';
+      msgEl.className = 'text-xs text-red-500';
+      msgEl.classList.remove('hidden');
+      btn.disabled = false;
+      btn.textContent = 'Guardar cambios';
+    } else {
+      window.location.href = '/index.html';
+    }
+  }
+
+  /* ── Pedidos ── */
+  async function loadPedidos(userId) {
+    const listEl = document.getElementById('pedidos-list');
+
+    const { data, error } = await BG.db
+      .from('ventas')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(20);
+
+    if (error || !data?.length) {
+      listEl.innerHTML = `
+        <div class="text-center py-8">
+          <span class="material-symbols-outlined text-3xl text-gray-300">receipt_long</span>
+          <p class="text-sm text-gray-400 mt-2">Todavía no tenés pedidos.</p>
+          <a href="/index.html" class="inline-block mt-3 text-xs font-bold text-black underline">Ver productos</a>
+        </div>`;
+      return;
+    }
+
+    listEl.innerHTML = data.map(v => {
+      const fecha = new Date(v.created_at).toLocaleDateString('es-AR', {
+        day: '2-digit', month: 'short', year: 'numeric'
+      });
+      const estadoBadge = {
+        'aprobado':  'bg-green-100 text-green-700',
+        'pendiente': 'bg-yellow-100 text-yellow-700',
+        'rechazado': 'bg-red-100 text-red-700',
+      }[v.estado] || 'bg-gray-100 text-gray-600';
+
+      return `
+        <div class="flex items-center justify-between py-3 border-b border-gray-100 last:border-0">
+          <div>
+            <p class="text-sm font-bold text-black">#${String(v.id).slice(0,8).toUpperCase()}</p>
+            <p class="text-xs text-gray-400">${fecha}</p>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="text-sm font-mono font-bold">$${Number(v.total || 0).toLocaleString('es-AR')}</span>
+            <span class="text-[11px] font-bold px-2 py-0.5 rounded-full ${estadoBadge}">
+              ${v.estado || 'pendiente'}
+            </span>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  init();
+</script>
 </body>
 </html>
