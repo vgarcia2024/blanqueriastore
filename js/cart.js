@@ -248,6 +248,7 @@ async function payWithMP() {
     getTotal,
     buildWhatsAppMessage,
     sendOrder,
+    payWithMP,
     render,
   };
 
