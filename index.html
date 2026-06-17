@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"/>
   <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-  <title>Blanqueria Store</title>
+  <title>BlancoGestión — Blanquería</title>
   <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
@@ -190,10 +190,46 @@
   </div>
 </footer>
 
+<!-- Cart FAB -->
+<button id="cart-fab" class="fab" style="display:none" onclick="BG_UI.openModal('cart-overlay')">
+  <span class="material-symbols-outlined">shopping_cart</span>
+  <span id="cart-badge" class="absolute -top-1.5 -right-1.5 bg-white text-primary text-[11px] font-bold w-5 h-5 rounded-full flex items-center justify-center border-2 border-primary">0</span>
+</button>
+
+<!-- Cart Drawer -->
+<div class="modal-overlay fixed inset-0 bg-black/50 z-[60] flex items-center justify-center opacity-0 pointer-events-none p-4" id="cart-overlay">
+  <div class="modal-content bg-surface w-full max-w-md rounded-xl border border-outline-variant shadow-2xl overflow-hidden scale-95 opacity-0 flex flex-col max-h-[85vh]">
+    <div class="flex items-center justify-between p-md border-b border-outline-variant flex-shrink-0">
+      <h3 class="font-bold text-lg text-primary">Tu pedido</h3>
+      <button onclick="BG_UI.closeModal('cart-overlay')" class="p-2 hover:bg-surface-container-low rounded-full transition-colors">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+    <div class="p-md overflow-y-auto flex-1">
+      <p id="cart-empty" class="text-center text-on-surface-variant text-sm py-lg">Todavía no agregaste productos.</p>
+      <div id="cart-items"></div>
+    </div>
+    <div id="cart-footer" style="display:none" class="p-md border-t border-outline-variant flex-shrink-0">
+      <div class="flex items-center justify-between mb-sm">
+        <span class="font-bold text-sm">TOTAL ESTIMADO</span>
+        <span id="cart-total" class="font-mono font-bold text-lg">—</span>
+      </div>
+      <div class="flex gap-xs">
+        <button onclick="BG_CART.clear()" class="px-4 py-2.5 border border-outline-variant rounded-lg font-bold text-xs text-on-surface-variant hover:bg-surface-container-highest transition-all">VACIAR</button>
+        <button onclick="BG_CART.sendOrder()" class="flex-1 flex items-center justify-center gap-xs bg-[#25D366] text-white text-sm font-bold py-2.5 rounded-lg hover:opacity-90 active:scale-[0.98] transition-all">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.126 1.534 5.857L.057 23.882a.75.75 0 0 0 .921.921l6.025-1.477A11.955 11.955 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.75a9.75 9.75 0 0 1-4.989-1.373l-.358-.214-3.717.911.931-3.613-.234-.373A9.75 9.75 0 1 1 12 21.75z"/></svg>
+          Enviar pedido
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div id="toast-container"></div>
 
 <script src="js/supabase.js"></script>
 <script src="js/main.js"></script>
+<script src="js/cart.js"></script>
 <script src="js/auth.js"></script>
 <script>
 (function () {
@@ -216,11 +252,16 @@
     }
   }
 
-  const WA_NUMBER = '5493364193123';
+  /* Mapa de productos cargados, para leerlos al agregar al carrito */
+  let productsById = {};
 
-  function waLink(nombre, cantidad) {
-    const msg = encodeURIComponent(`¡Hola! Me gustaría ${cantidad} de ${nombre}. ¿Cómo seguimos?`);
-    return `https://wa.me/${WA_NUMBER}?text=${msg}`;
+  /* Clampea el input de cantidad contra el stock disponible (delegado) */
+  function clampQtyInput(input) {
+    const max = parseInt(input.max, 10) || 1;
+    let val = parseInt(input.value, 10) || 1;
+    val = Math.max(1, Math.min(val, max));
+    input.value = val;
+    return val;
   }
 
   /* Catálogo público */
@@ -230,6 +271,7 @@
     try {
       const { data, count } = await BG.getProducts({ search, perPage: 20 });
       countEl.textContent = `${count} artículos en catálogo`;
+      productsById = {};
 
       if (!data.length) {
         grid.innerHTML = `<div class="col-span-5 text-center py-8 text-on-surface-variant">Sin productos disponibles.</div>`;
@@ -237,34 +279,33 @@
       }
 
       grid.innerHTML = data.map(p => {
+        productsById[p.id] = p;
         const { cls, label } = BG_UI.stockBadge(p.stock);
         const sinStock = p.stock === 0;
         const img = p.imagen_url
-          ? `<img src="${esc(p.imagen_url)}" alt="${esc(p.nombre)}" class="w-full h-full object-cover"/>`
+          ? `<img src="${esc(p.imagen_url)}" alt="${esc(p.nombre)}" class="w-full h-full object-cover img-gray"/>`
           : `<div class="w-full h-full flex items-center justify-center bg-surface-container"><span class="material-symbols-outlined text-3xl text-outline">imagesmode</span></div>`;
         return `
-          <div class="flat-card rounded-xl overflow-hidden border border-outline-variant bg-white shadow-sm flex flex-col">
+          <div class="flat-card rounded-xl overflow-hidden border border-outline-variant bg-white flex flex-col">
             <div class="aspect-square bg-surface-container overflow-hidden relative">
               ${img}
-              <span class="absolute top-2 right-2 text-[10px] font-bold ${cls} px-1.5 py-0.5 rounded">${label}</span>
+              <span class="absolute top-2 right-2 text-[10px] font-bold tracking-wide ${cls} px-1.5 py-0.5 rounded">${label}</span>
             </div>
-            <div class="p-sm flex flex-col gap-xs flex-1">
-              <h4 class="font-bold text-body-md truncate">${esc(p.nombre)}</h4>
-              <p class="text-xs text-on-surface-variant truncate">${esc(p.categoria || '')}</p>
-              <p class="font-mono text-sm font-bold">${BG_UI.formatPrice(p.precio)}</p>
+            <div class="p-sm flex flex-col gap-0.5 flex-1">
+              <p class="text-[10px] text-on-surface-variant uppercase tracking-wide truncate">${esc(p.categoria || '')}</p>
+              <h4 class="font-bold text-body-md leading-snug truncate" title="${esc(p.nombre)}">${esc(p.nombre)}</h4>
+              <p class="font-mono text-sm font-bold mt-0.5 mb-xs">${BG_UI.formatPrice(p.precio)}</p>
               ${!sinStock ? `
-              <div class="flex items-center gap-xs mt-xs">
-                <label class="text-[10px] text-on-surface-variant font-bold">CANT.</label>
+              <div class="flex items-center gap-xs mt-auto">
                 <input type="number" min="1" max="${p.stock}" value="1" id="qty-${p.id}"
-                  class="w-14 text-center border border-outline-variant rounded px-1 py-0.5 text-sm font-mono focus:outline-none focus:border-primary"/>
-              </div>
-              <a id="wa-${p.id}" href="${waLink(p.nombre, 1)}" target="_blank"
-                onclick="this.href='https://wa.me/${WA_NUMBER}?text='+encodeURIComponent('¡Hola! Me gustaría '+document.getElementById('qty-${p.id}').value+' de ${esc(p.nombre)}. ¿Cómo seguimos?')"
-                class="mt-xs flex items-center justify-center gap-xs bg-[#25D366] text-white text-[11px] font-bold py-1.5 rounded-lg hover:opacity-90 transition-all">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.126 1.534 5.857L.057 23.882a.75.75 0 0 0 .921.921l6.025-1.477A11.955 11.955 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.75a9.75 9.75 0 0 1-4.989-1.373l-.358-.214-3.717.911.931-3.613-.234-.373A9.75 9.75 0 1 1 12 21.75z"/></svg>
-                Enviar por WhatsApp
-              </a>` : `
-              <p class="mt-xs text-center text-[11px] text-error font-bold py-1.5">Sin stock disponible</p>`}
+                  class="w-12 text-center border border-outline-variant rounded-lg px-1 py-1.5 text-sm font-mono focus:outline-none focus:border-primary"/>
+                <button data-add-cart="${p.id}"
+                  class="flex-1 flex items-center justify-center gap-1 bg-primary text-on-primary text-[11px] font-bold py-1.5 rounded-lg hover:opacity-90 active:scale-[0.97] transition-all">
+                  <span class="material-symbols-outlined text-sm">add_shopping_cart</span>
+                  Agregar
+                </button>
+              </div>` : `
+              <p class="mt-auto text-center text-[11px] text-error font-bold py-1.5">Sin stock disponible</p>`}
             </div>
           </div>`;
       }).join('');
@@ -272,6 +313,32 @@
       grid.innerHTML = `<div class="col-span-5 text-center py-8 text-on-surface-variant">Error cargando productos.</div>`;
     }
   }
+
+  /* Click delegado: agregar al carrito + clamp en vivo de la cantidad */
+  document.getElementById('catalog-grid')?.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-add-cart]');
+    if (!btn) return;
+    const id = btn.getAttribute('data-add-cart');
+    const product = productsById[id];
+    const qtyInput = document.getElementById(`qty-${id}`);
+    if (!product || !qtyInput) return;
+
+    const qty = clampQtyInput(qtyInput);
+    const previaEnCarrito = BG_CART.getItems().find(i => String(i.id) === id)?.cantidad || 0;
+    const finalQty = BG_CART.add(product, qty);
+
+    if (finalQty - previaEnCarrito < qty) {
+      BG_UI.toast(`Solo hay ${product.stock} de "${product.nombre}" en stock — ajustamos la cantidad.`, 'warning');
+    } else {
+      BG_UI.toast(`${product.nombre} agregado al carrito.`, 'success');
+    }
+  });
+
+  document.getElementById('catalog-grid')?.addEventListener('input', (e) => {
+    if (e.target.matches('input[type="number"][id^="qty-"]')) {
+      clampQtyInput(e.target);
+    }
+  });
 
   /* Búsqueda con debounce */
   document.getElementById('catalog-search')?.addEventListener('input', BG_UI.debounce(e => {
@@ -282,6 +349,7 @@
   BG_AUTH.updateNav();
 
   /* Init */
+  BG_CART.init();
   loadStats();
   loadCatalog();
 })();
