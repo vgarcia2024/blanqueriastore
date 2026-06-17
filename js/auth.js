@@ -28,6 +28,17 @@
     return user.user_metadata?.role === 'admin';
   }
 
+  async function getProfile() {
+    const user = await getUser();
+    if (!user) return null;
+    const { data } = await BG.db
+      .from('profiles')
+      .select('*')
+      .eq('id', user.id)
+      .single();
+    return data;
+  }
+
   /* ════════════════════════════════════
      LOGIN / LOGOUT
   ════════════════════════════════════ */
@@ -62,43 +73,64 @@
   }
 
   /* ════════════════════════════════════
-     NAV: mostrar/ocultar enlace PANEL
-     y actualizar botón login/logout
+     NAV: actualiza todos los elementos
+     según si hay sesión o no
   ════════════════════════════════════ */
 
   async function updateNav() {
-    // Una sola llamada a Supabase, reutilizamos la sesión
     const session = await getSession();
     const user    = session?.user ?? null;
     const admin   = user ? user.user_metadata?.role === 'admin' : false;
 
-    // Mostrar/ocultar links de panel
+    /* -- Links solo para admins (PANEL) -- */
     document.querySelectorAll('[data-admin-only]').forEach(el => {
       el.style.display = admin ? '' : 'none';
     });
 
-    // Ocultar links que no deben verse si es admin
+    /* -- Links que se ocultan si es admin -- */
     document.querySelectorAll('[data-hide-if-admin]').forEach(el => {
       el.style.display = admin ? 'none' : '';
     });
 
-    // Botón de cuenta en topnav
-    const btnAccount = document.getElementById('btn-account');
-    if (btnAccount) {
-      if (user) {
-        btnAccount.title   = user.email;
-        btnAccount.onclick = logout;
-        btnAccount.innerHTML = `<span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1">account_circle</span>`;
-      } else {
-        btnAccount.title   = 'Iniciar sesión';
-        btnAccount.onclick = () => { window.location.href = '/pages/login.html'; };
-        btnAccount.innerHTML = `<span class="flex items-center gap-xs"><span class="material-symbols-outlined text-base">person</span><span class="text-label-caps font-bold">Iniciar sesión</span></span>`;
-      }
-      // Mostrar el botón recién ahora que ya sabemos el estado
-      btnAccount.style.display = '';
+    /* ── Nuevo dropdown de cuenta (index + mi-cuenta) ── */
+    const wrap          = document.getElementById('account-menu-wrap');
+    const btnLogin      = document.getElementById('btn-login');
+    const avatarName    = document.getElementById('avatar-name');
+    const mobileLogin   = document.getElementById('mobile-login-link');
+    const mobileCuenta  = document.getElementById('mobile-cuenta-link');
+    const mobilePedidos = document.getElementById('mobile-pedidos-link');
+    const mobileLogout  = document.getElementById('mobile-logout-btn');
+
+    if (user) {
+      // Traer perfil para mostrar el nombre
+      const profile = await getProfile();
+      const nombre  = profile?.nombre || user.email?.split('@')[0] || '';
+
+      // Desktop: mostrar avatar, ocultar "Ingresar"
+      if (wrap)     wrap.style.display     = 'block';
+      if (btnLogin) btnLogin.style.display  = 'none';
+      if (avatarName && nombre) avatarName.textContent = nombre;
+
+      // Mobile sidebar: mostrar cuenta/pedidos/logout, ocultar login
+      if (mobileLogin)    mobileLogin.style.display   = 'none';
+      if (mobileCuenta)   mobileCuenta.style.display  = 'flex';
+      if (mobilePedidos)  mobilePedidos.style.display = 'flex';
+      if (mobileLogout)   mobileLogout.style.display  = 'flex';
+
+    } else {
+      // Desktop: ocultar avatar, mostrar "Ingresar"
+      if (wrap)     wrap.style.display     = 'none';
+      if (btnLogin) btnLogin.style.display  = 'flex';
+      if (avatarName) avatarName.textContent = '';
+
+      // Mobile sidebar: mostrar login, ocultar el resto
+      if (mobileLogin)    mobileLogin.style.display   = 'flex';
+      if (mobileCuenta)   mobileCuenta.style.display  = 'none';
+      if (mobilePedidos)  mobilePedidos.style.display = 'none';
+      if (mobileLogout)   mobileLogout.style.display  = 'none';
     }
 
-    // Info de usuario en sidebar (panel.html)
+    /* ── Info de usuario en sidebar del panel admin ── */
     const sidebarUser = document.getElementById('sidebar-user-info');
     if (sidebarUser && user) {
       sidebarUser.innerHTML = `
@@ -118,17 +150,6 @@
     }
   }
 
-async function getProfile() {
-  const user = await getUser();
-  if (!user) return null;
-  const { data } = await BG.db
-    .from('profiles')
-    .select('*')
-    .eq('id', user.id)
-    .single();
-  return data;
-}
-   
   /* ── Exportar namespace BG_AUTH ── */
   window.BG_AUTH = {
     getSession,
