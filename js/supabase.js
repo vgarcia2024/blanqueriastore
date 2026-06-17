@@ -48,6 +48,22 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
   }
 
   /**
+   * Lista de categorías distintas entre los productos activos, para poblar
+   * el filtro del catálogo público. Se deduplica en el cliente porque
+   * Supabase REST no expone DISTINCT directo sin una función RPC.
+   */
+  async function getCategories() {
+    const { data, error } = await db
+      .from('productos')
+      .select('categoria')
+      .eq('activo', true)
+      .not('categoria', 'is', null);
+    if (error) throw error;
+    const unique = [...new Set(data.map(p => p.categoria).filter(Boolean))];
+    return unique.sort((a, b) => a.localeCompare(b, 'es'));
+  }
+
+  /**
    * Buscar productos por nombre/descripción para el autocomplete de ventas.
    */
   async function searchProductsForSale(term) {
@@ -242,6 +258,7 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
     db,
     // Productos
     getProducts,
+    getCategories,
     searchProductsForSale,
     saveProduct,
     updateStock,
