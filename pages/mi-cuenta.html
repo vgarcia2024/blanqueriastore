@@ -10,7 +10,53 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="../env-config.js" onerror="console.warn('env-config.js no encontrado.')"></script>
   <link rel="stylesheet" href="../css/main.css"/>
-  <style>body { font-family: 'Inter', sans-serif; }</style>
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+
+    /* Dropdown del avatar */
+    #account-dropdown {
+      display: none;
+      position: absolute;
+      top: calc(100% + 8px);
+      right: 0;
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+      min-width: 180px;
+      z-index: 200;
+      overflow: hidden;
+    }
+    #account-dropdown.open { display: block; }
+    #account-dropdown a, #account-dropdown button {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+      padding: 11px 16px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #111;
+      background: none;
+      border: none;
+      cursor: pointer;
+      text-decoration: none;
+      text-align: left;
+      transition: background 0.15s;
+    }
+    #account-dropdown a:hover, #account-dropdown button:hover { background: #f9fafb; }
+    #account-dropdown .menu-divider { height: 1px; background: #f0f0f0; margin: 2px 0; }
+    #account-dropdown .danger { color: #dc2626; }
+
+    /* Tabs */
+    .tab-btn { transition: all 0.15s; }
+    .tab-btn.active {
+      background: #000;
+      color: #fff;
+    }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+  </style>
 </head>
 <body class="min-h-screen bg-gray-50">
 
@@ -20,11 +66,34 @@
       <a href="/index.html" class="text-lg font-bold tracking-tight">BlancoGestión</a>
       <div class="flex items-center gap-3">
         <span id="nav-email" class="text-xs text-white/60 hidden md:block"></span>
-        <button onclick="BG_AUTH.logout()"
-          class="flex items-center gap-1.5 text-xs font-bold text-white/70 hover:text-white transition-colors">
-          <span class="material-symbols-outlined text-base">logout</span>
-          Salir
-        </button>
+
+        <!-- Botón avatar con dropdown -->
+        <div class="relative" id="account-menu-wrap">
+          <button id="account-avatar-btn"
+            class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 transition-colors text-sm font-semibold"
+            onclick="toggleAccountMenu(event)">
+            <span class="material-symbols-outlined text-base" style="font-size:18px">account_circle</span>
+            <span id="avatar-name" class="hidden md:block max-w-[100px] truncate text-xs"></span>
+            <span class="material-symbols-outlined text-xs" style="font-size:14px" id="avatar-chevron">expand_more</span>
+          </button>
+
+          <!-- Dropdown -->
+          <div id="account-dropdown">
+            <a href="/pages/mi-cuenta.html#perfil" onclick="switchTab('perfil'); closeAccountMenu()">
+              <span class="material-symbols-outlined" style="font-size:18px">person</span>
+              Mi perfil
+            </a>
+            <a href="/pages/mi-cuenta.html#pedidos" onclick="switchTab('pedidos'); closeAccountMenu()">
+              <span class="material-symbols-outlined" style="font-size:18px">receipt_long</span>
+              Mis pedidos
+            </a>
+            <div class="menu-divider"></div>
+            <button class="danger" onclick="BG_AUTH.logout()">
+              <span class="material-symbols-outlined" style="font-size:18px">logout</span>
+              Cerrar sesión
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   </nav>
@@ -37,8 +106,18 @@
       <h1 id="welcome-name" class="text-2xl font-bold text-black">Hola 👋</h1>
     </div>
 
-    <!-- Perfil -->
-    <div class="bg-white rounded-2xl border border-gray-200 p-6 mb-4">
+    <!-- Tabs -->
+    <div class="flex gap-2 mb-5 p-1 bg-gray-100 rounded-xl w-fit">
+      <button id="tab-perfil" class="tab-btn active text-xs font-bold px-4 py-2 rounded-lg" onclick="switchTab('perfil')">
+        Mi perfil
+      </button>
+      <button id="tab-pedidos" class="tab-btn text-xs font-bold px-4 py-2 rounded-lg text-gray-500" onclick="switchTab('pedidos')">
+        Mis pedidos
+      </button>
+    </div>
+
+    <!-- Panel: Perfil -->
+    <div id="panel-perfil" class="tab-panel active bg-white rounded-2xl border border-gray-200 p-6">
       <h2 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Mis datos</h2>
       <div class="flex flex-col gap-4">
         <div>
@@ -64,8 +143,8 @@
       </div>
     </div>
 
-    <!-- Mis pedidos -->
-    <div class="bg-white rounded-2xl border border-gray-200 p-6">
+    <!-- Panel: Pedidos -->
+    <div id="panel-pedidos" class="tab-panel bg-white rounded-2xl border border-gray-200 p-6">
       <h2 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Mis pedidos</h2>
       <div id="pedidos-list">
         <p class="text-sm text-gray-400 text-center py-6">Cargando pedidos...</p>
@@ -79,50 +158,83 @@
   <script>
     let currentProfile = null;
 
-    async function init() {
-  const session = await BG_AUTH.getSession();
-  if (!session) {
-    window.location.href = '/pages/login.html';
-    return;
-  }
+    /* ── Tabs ── */
+    function switchTab(name) {
+      ['perfil', 'pedidos'].forEach(t => {
+        document.getElementById('tab-' + t).classList.toggle('active', t === name);
+        document.getElementById('tab-' + t).classList.toggle('text-gray-500', t !== name);
+        document.getElementById('panel-' + t).classList.toggle('active', t === name);
+      });
+      // actualizar hash sin recargar
+      history.replaceState(null, '', '#' + name);
+    }
 
-  currentProfile = await BG_AUTH.getProfile();
-
-  // Si no tiene perfil todavía, lo creamos
-  if (!currentProfile) {
-    const user = session.user;
-    await BG.db.from('profiles').upsert({
-      id: user.id,
-      email: user.email,
-      nombre: user.user_metadata?.nombre || '',
-      role: user.user_metadata?.role || 'user'
+    /* ── Dropdown de cuenta ── */
+    function toggleAccountMenu(e) {
+      e.stopPropagation();
+      const dd = document.getElementById('account-dropdown');
+      const chevron = document.getElementById('avatar-chevron');
+      const isOpen = dd.classList.toggle('open');
+      chevron.textContent = isOpen ? 'expand_less' : 'expand_more';
+    }
+    function closeAccountMenu() {
+      document.getElementById('account-dropdown').classList.remove('open');
+      document.getElementById('avatar-chevron').textContent = 'expand_more';
+    }
+    document.addEventListener('click', (e) => {
+      if (!document.getElementById('account-menu-wrap').contains(e.target)) {
+        closeAccountMenu();
+      }
     });
-    currentProfile = await BG_AUTH.getProfile();
-  }
 
-  // Si sigue siendo null, algo está muy mal
-  if (!currentProfile) {
-    window.location.href = '/pages/login.html';
-    return;
-  }
+    /* ── Init ── */
+    async function init() {
+      const session = await BG_AUTH.getSession();
+      if (!session) {
+        window.location.href = '/pages/login.html';
+        return;
+      }
 
-  // Si es admin, mandarlo al panel
-  if (currentProfile.role === 'admin') {
-    window.location.href = '/pages/panel.html';
-    return;
-  }
+      currentProfile = await BG_AUTH.getProfile();
 
-  // Rellenar datos
-  document.getElementById('welcome-name').textContent =
-    `Hola, ${currentProfile.nombre || 'bienvenido'} 👋`;
-  document.getElementById('nav-email').textContent = currentProfile.email;
-  document.getElementById('p-nombre').value = currentProfile.nombre || '';
-  document.getElementById('p-email').value = currentProfile.email || '';
-  document.getElementById('p-telefono').value = currentProfile.telefono || '';
+      if (!currentProfile) {
+        const user = session.user;
+        await BG.db.from('profiles').upsert({
+          id: user.id,
+          email: user.email,
+          nombre: user.user_metadata?.nombre || '',
+          role: user.user_metadata?.role || 'user'
+        });
+        currentProfile = await BG_AUTH.getProfile();
+      }
 
-  loadPedidos(currentProfile.id);
-}
+      if (!currentProfile) {
+        window.location.href = '/pages/login.html';
+        return;
+      }
 
+      if (currentProfile.role === 'admin') {
+        window.location.href = '/pages/panel.html';
+        return;
+      }
+
+      // Rellenar datos
+      const nombre = currentProfile.nombre || 'bienvenido';
+      document.getElementById('welcome-name').textContent = `Hola, ${nombre} 👋`;
+      document.getElementById('nav-email').textContent = currentProfile.email;
+      document.getElementById('avatar-name').textContent = nombre;
+      document.getElementById('p-nombre').value = currentProfile.nombre || '';
+      document.getElementById('p-email').value = currentProfile.email || '';
+      document.getElementById('p-telefono').value = currentProfile.telefono || '';
+
+      loadPedidos(currentProfile.id);
+
+      // Activar tab según hash
+      const hash = window.location.hash.replace('#', '');
+      if (hash === 'pedidos') switchTab('pedidos');
+    }
+
+    /* ── Guardar perfil → redirige al index ── */
     async function saveProfile() {
       const nombre = document.getElementById('p-nombre').value.trim();
       const telefono = document.getElementById('p-telefono').value.trim();
@@ -136,6 +248,10 @@
         return;
       }
 
+      const btn = document.querySelector('button[onclick="saveProfile()"]');
+      btn.disabled = true;
+      btn.textContent = 'Guardando...';
+
       const { error } = await BG.db
         .from('profiles')
         .update({ nombre, telefono })
@@ -144,15 +260,16 @@
       if (error) {
         msgEl.textContent = 'Error al guardar. Intentá de nuevo.';
         msgEl.className = 'text-xs text-red-500';
+        msgEl.classList.remove('hidden');
+        btn.disabled = false;
+        btn.textContent = 'Guardar cambios';
       } else {
-        msgEl.textContent = '¡Datos guardados correctamente!';
-        msgEl.className = 'text-xs text-green-600';
-        document.getElementById('welcome-name').textContent = `Hola, ${nombre} 👋`;
+        // Éxito → redirigir al index
+        window.location.href = '/index.html';
       }
-      msgEl.classList.remove('hidden');
-      setTimeout(() => msgEl.classList.add('hidden'), 3000);
     }
 
+    /* ── Pedidos ── */
     async function loadPedidos(userId) {
       const listEl = document.getElementById('pedidos-list');
 
@@ -178,7 +295,7 @@
           day: '2-digit', month: 'short', year: 'numeric'
         });
         const estadoBadge = {
-          'aprobado': 'bg-green-100 text-green-700',
+          'aprobado':  'bg-green-100 text-green-700',
           'pendiente': 'bg-yellow-100 text-yellow-700',
           'rechazado': 'bg-red-100 text-red-700',
         }[v.estado] || 'bg-gray-100 text-gray-600';
