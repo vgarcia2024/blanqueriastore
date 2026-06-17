@@ -118,50 +118,21 @@
     </div>
   </section>
 
-  <!-- Stats Cards -->
-  <div class="max-w-container-max mx-auto px-gutter -mt-base relative z-20">
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-md">
-      <div class="bg-white border border-outline-variant p-md rounded-xl shadow-sm">
-        <div class="flex items-center gap-xs mb-xs">
-          <span class="material-symbols-outlined text-sm text-secondary">category</span>
-          <p class="text-label-caps text-secondary">TOTAL PRODUCTOS</p>
-        </div>
-        <p class="text-headline-md font-bold" id="stat-total">—</p>
-      </div>
-      <div class="bg-white border border-outline-variant p-md rounded-xl shadow-sm">
-        <div class="flex items-center gap-xs mb-xs">
-          <span class="material-symbols-outlined text-sm text-secondary">inventory_2</span>
-          <p class="text-label-caps text-secondary">TOTAL EN STOCK</p>
-        </div>
-        <p class="text-headline-md font-bold" id="stat-stock">—</p>
-      </div>
-      <div class="bg-white border border-outline-variant p-md rounded-xl shadow-sm">
-        <div class="flex items-center gap-xs mb-xs">
-          <span class="material-symbols-outlined text-sm text-yellow-700">warning</span>
-          <p class="text-label-caps text-yellow-700">STOCK BAJO</p>
-        </div>
-        <p class="text-headline-md font-bold text-yellow-700" id="stat-low">—</p>
-      </div>
-      <div class="bg-white border border-outline-variant p-md rounded-xl shadow-sm">
-        <div class="flex items-center gap-xs mb-xs">
-          <span class="material-symbols-outlined text-sm text-error">error</span>
-          <p class="text-label-caps text-error">SIN STOCK</p>
-        </div>
-        <p class="text-headline-md font-bold text-error" id="stat-out">—</p>
-      </div>
-    </div>
-  </div>
-
   <!-- Catálogo de productos -->
-  <section class="py-xl max-w-container-max mx-auto px-gutter">
+  <section class="py-xl max-w-container-max mx-auto px-gutter mt-base">
     <div class="flex flex-col md:flex-row md:items-center justify-between mb-lg border-b border-outline-variant pb-base gap-md">
       <div>
         <span class="text-label-caps text-secondary">INVENTARIO</span>
         <h2 class="text-headline-md font-bold mt-xs uppercase tracking-tight">Nuestros Productos</h2>
       </div>
-      <div class="relative">
-        <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-sm">search</span>
-        <input id="catalog-search" class="pl-9 pr-4 py-2 border border-outline-variant rounded-lg bg-surface-container-lowest text-body-md focus:outline-none focus:border-primary w-56" placeholder="Buscar producto..." type="text"/>
+      <div class="flex flex-col sm:flex-row gap-sm">
+        <select id="catalog-category" class="px-3 py-2 border border-outline-variant rounded-lg bg-surface-container-lowest text-body-md focus:outline-none focus:border-primary sm:w-44">
+          <option value="">Todas las categorías</option>
+        </select>
+        <div class="relative">
+          <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-sm">search</span>
+          <input id="catalog-search" class="pl-9 pr-4 py-2 border border-outline-variant rounded-lg bg-surface-container-lowest text-body-md focus:outline-none focus:border-primary w-full sm:w-56" placeholder="Buscar producto..." type="text"/>
+        </div>
       </div>
     </div>
 
@@ -239,16 +210,20 @@
     return String(str ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   }
 
-  /* Stats públicas */
-  async function loadStats() {
+  /* Categorías para el filtro del catálogo */
+  async function loadCategories() {
+    const select = document.getElementById('catalog-category');
+    if (!select) return;
     try {
-      const stats = await BG.getDashboardStats();
-      document.getElementById('stat-total').textContent = stats.totalProducts.toLocaleString('es-AR');
-      document.getElementById('stat-stock').textContent = stats.totalStock.toLocaleString('es-AR');
-      document.getElementById('stat-low').textContent   = stats.lowStock.toLocaleString('es-AR');
-      document.getElementById('stat-out').textContent   = stats.outOfStock.toLocaleString('es-AR');
+      const categorias = await BG.getCategories();
+      categorias.forEach(cat => {
+        const opt = document.createElement('option');
+        opt.value = cat;
+        opt.textContent = cat;
+        select.appendChild(opt);
+      });
     } catch (err) {
-      console.warn('Stats error:', err.message);
+      console.warn('Categorías error:', err.message);
     }
   }
 
@@ -265,11 +240,11 @@
   }
 
   /* Catálogo público */
-  async function loadCatalog(search = '') {
+  async function loadCatalog(search = '', category = '') {
     const grid    = document.getElementById('catalog-grid');
     const countEl = document.getElementById('catalog-count');
     try {
-      const { data, count } = await BG.getProducts({ search, perPage: 20 });
+      const { data, count } = await BG.getProducts({ search, category, perPage: 20 });
       countEl.textContent = `${count} artículos en catálogo`;
       productsById = {};
 
@@ -342,15 +317,20 @@
 
   /* Búsqueda con debounce */
   document.getElementById('catalog-search')?.addEventListener('input', BG_UI.debounce(e => {
-    loadCatalog(e.target.value.trim());
+    loadCatalog(e.target.value.trim(), document.getElementById('catalog-category')?.value || '');
   }, 400));
+
+  /* Filtro por categoría */
+  document.getElementById('catalog-category')?.addEventListener('change', e => {
+    loadCatalog(document.getElementById('catalog-search')?.value.trim() || '', e.target.value);
+  });
 
   /* Si hay admin logueado, actualizar nav (muestra PANEL y avatar) */
   BG_AUTH.updateNav();
 
   /* Init */
   BG_CART.init();
-  loadStats();
+  loadCategories();
   loadCatalog();
 })();
 </script>
