@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html class="light" lang="es">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>Mi cuenta — BlancoGestión</title>
+  <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../env-config.js" onerror="console.warn('env-config.js no encontrado.')"></script>
+  <link rel="stylesheet" href="../css/main.css"/>
+  <style>body { font-family: 'Inter', sans-serif; }</style>
+</head>
+<body class="min-h-screen bg-gray-50">
+
+  <!-- Nav -->
+  <nav class="fixed top-0 left-0 w-full z-50 bg-black text-white h-16">
+    <div class="flex justify-between items-center w-full px-6 h-full max-w-5xl mx-auto">
+      <a href="/index.html" class="text-lg font-bold tracking-tight">BlancoGestión</a>
+      <div class="flex items-center gap-3">
+        <span id="nav-email" class="text-xs text-white/60 hidden md:block"></span>
+        <button onclick="BG_AUTH.logout()"
+          class="flex items-center gap-1.5 text-xs font-bold text-white/70 hover:text-white transition-colors">
+          <span class="material-symbols-outlined text-base">logout</span>
+          Salir
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <main class="pt-24 pb-16 max-w-2xl mx-auto px-4">
+
+    <!-- Header -->
+    <div class="mb-8">
+      <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Mi cuenta</p>
+      <h1 id="welcome-name" class="text-2xl font-bold text-black">Hola 👋</h1>
+    </div>
+
+    <!-- Perfil -->
+    <div class="bg-white rounded-2xl border border-gray-200 p-6 mb-4">
+      <h2 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Mis datos</h2>
+      <div class="flex flex-col gap-4">
+        <div>
+          <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">Nombre</label>
+          <input id="p-nombre" type="text" placeholder="Tu nombre"
+            class="w-full px-3.5 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-black transition-colors"/>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">Email</label>
+          <input id="p-email" type="email" disabled
+            class="w-full px-3.5 py-2.5 border border-gray-100 rounded-lg text-sm bg-gray-50 text-gray-400 cursor-not-allowed"/>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">Teléfono</label>
+          <input id="p-telefono" type="tel" placeholder="11 1234-5678"
+            class="w-full px-3.5 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-black transition-colors"/>
+        </div>
+        <p id="profile-msg" class="text-xs hidden"></p>
+        <button onclick="saveProfile()"
+          class="w-full bg-black text-white py-2.5 rounded-lg text-sm font-bold hover:opacity-80 active:scale-[0.98] transition-all">
+          Guardar cambios
+        </button>
+      </div>
+    </div>
+
+    <!-- Mis pedidos -->
+    <div class="bg-white rounded-2xl border border-gray-200 p-6">
+      <h2 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Mis pedidos</h2>
+      <div id="pedidos-list">
+        <p class="text-sm text-gray-400 text-center py-6">Cargando pedidos...</p>
+      </div>
+    </div>
+
+  </main>
+
+  <script src="../js/supabase.js"></script>
+  <script src="../js/auth.js"></script>
+  <script>
+    let currentProfile = null;
+
+    async function init() {
+      const session = await BG_AUTH.getSession();
+      if (!session) {
+        window.location.href = '/pages/login.html';
+        return;
+      }
+
+      currentProfile = await BG_AUTH.getProfile();
+      if (!currentProfile) {
+        window.location.href = '/pages/login.html';
+        return;
+      }
+
+      // Si es admin, mandarlo al panel
+      if (currentProfile.role === 'admin') {
+        window.location.href = '/pages/panel.html';
+        return;
+      }
+
+      // Rellenar datos
+      document.getElementById('welcome-name').textContent =
+        `Hola, ${currentProfile.nombre || 'bienvenido'} 👋`;
+      document.getElementById('nav-email').textContent = currentProfile.email;
+      document.getElementById('p-nombre').value = currentProfile.nombre || '';
+      document.getElementById('p-email').value = currentProfile.email || '';
+      document.getElementById('p-telefono').value = currentProfile.telefono || '';
+
+      loadPedidos(currentProfile.id);
+    }
+
+    async function saveProfile() {
+      const nombre = document.getElementById('p-nombre').value.trim();
+      const telefono = document.getElementById('p-telefono').value.trim();
+      const msgEl = document.getElementById('profile-msg');
+      msgEl.classList.add('hidden');
+
+      if (!nombre) {
+        msgEl.textContent = 'El nombre no puede estar vacío.';
+        msgEl.className = 'text-xs text-red-500';
+        msgEl.classList.remove('hidden');
+        return;
+      }
+
+      const { error } = await BG.db
+        .from('profiles')
+        .update({ nombre, telefono })
+        .eq('id', currentProfile.id);
+
+      if (error) {
+        msgEl.textContent = 'Error al guardar. Intentá de nuevo.';
+        msgEl.className = 'text-xs text-red-500';
+      } else {
+        msgEl.textContent = '¡Datos guardados correctamente!';
+        msgEl.className = 'text-xs text-green-600';
+        document.getElementById('welcome-name').textContent = `Hola, ${nombre} 👋`;
+      }
+      msgEl.classList.remove('hidden');
+      setTimeout(() => msgEl.classList.add('hidden'), 3000);
+    }
+
+    async function loadPedidos(userId) {
+      const listEl = document.getElementById('pedidos-list');
+
+      const { data, error } = await BG.db
+        .from('ventas')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(20);
+
+      if (error || !data?.length) {
+        listEl.innerHTML = `
+          <div class="text-center py-8">
+            <span class="material-symbols-outlined text-3xl text-gray-300">receipt_long</span>
+            <p class="text-sm text-gray-400 mt-2">Todavía no tenés pedidos.</p>
+            <a href="/index.html" class="inline-block mt-3 text-xs font-bold text-black underline">Ver productos</a>
+          </div>`;
+        return;
+      }
+
+      listEl.innerHTML = data.map(v => {
+        const fecha = new Date(v.created_at).toLocaleDateString('es-AR', {
+          day: '2-digit', month: 'short', year: 'numeric'
+        });
+        const estadoBadge = {
+          'aprobado': 'bg-green-100 text-green-700',
+          'pendiente': 'bg-yellow-100 text-yellow-700',
+          'rechazado': 'bg-red-100 text-red-700',
+        }[v.estado] || 'bg-gray-100 text-gray-600';
+
+        return `
+          <div class="flex items-center justify-between py-3 border-b border-gray-100 last:border-0">
+            <div>
+              <p class="text-sm font-bold text-black">#${v.id.slice(0,8).toUpperCase()}</p>
+              <p class="text-xs text-gray-400">${fecha}</p>
+            </div>
+            <div class="flex items-center gap-3">
+              <span class="text-sm font-mono font-bold">$${Number(v.total || 0).toLocaleString('es-AR')}</span>
+              <span class="text-[11px] font-bold px-2 py-0.5 rounded-full ${estadoBadge}">
+                ${v.estado || 'pendiente'}
+              </span>
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    init();
+  </script>
+</body>
+</html>
