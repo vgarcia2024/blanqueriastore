@@ -80,34 +80,48 @@
     let currentProfile = null;
 
     async function init() {
-      const session = await BG_AUTH.getSession();
-      if (!session) {
-        window.location.href = '/pages/login.html';
-        return;
-      }
+  const session = await BG_AUTH.getSession();
+  if (!session) {
+    window.location.href = '/pages/login.html';
+    return;
+  }
 
-      currentProfile = await BG_AUTH.getProfile();
-      if (!currentProfile) {
-        window.location.href = '/pages/login.html';
-        return;
-      }
+  currentProfile = await BG_AUTH.getProfile();
 
-      // Si es admin, mandarlo al panel
-      if (currentProfile.role === 'admin') {
-        window.location.href = '/pages/panel.html';
-        return;
-      }
+  // Si no tiene perfil todavía, lo creamos
+  if (!currentProfile) {
+    const user = session.user;
+    await BG.db.from('profiles').upsert({
+      id: user.id,
+      email: user.email,
+      nombre: user.user_metadata?.nombre || '',
+      role: user.user_metadata?.role || 'user'
+    });
+    currentProfile = await BG_AUTH.getProfile();
+  }
 
-      // Rellenar datos
-      document.getElementById('welcome-name').textContent =
-        `Hola, ${currentProfile.nombre || 'bienvenido'} 👋`;
-      document.getElementById('nav-email').textContent = currentProfile.email;
-      document.getElementById('p-nombre').value = currentProfile.nombre || '';
-      document.getElementById('p-email').value = currentProfile.email || '';
-      document.getElementById('p-telefono').value = currentProfile.telefono || '';
+  // Si sigue siendo null, algo está muy mal
+  if (!currentProfile) {
+    window.location.href = '/pages/login.html';
+    return;
+  }
 
-      loadPedidos(currentProfile.id);
-    }
+  // Si es admin, mandarlo al panel
+  if (currentProfile.role === 'admin') {
+    window.location.href = '/pages/panel.html';
+    return;
+  }
+
+  // Rellenar datos
+  document.getElementById('welcome-name').textContent =
+    `Hola, ${currentProfile.nombre || 'bienvenido'} 👋`;
+  document.getElementById('nav-email').textContent = currentProfile.email;
+  document.getElementById('p-nombre').value = currentProfile.nombre || '';
+  document.getElementById('p-email').value = currentProfile.email || '';
+  document.getElementById('p-telefono').value = currentProfile.telefono || '';
+
+  loadPedidos(currentProfile.id);
+}
 
     async function saveProfile() {
       const nombre = document.getElementById('p-nombre').value.trim();
