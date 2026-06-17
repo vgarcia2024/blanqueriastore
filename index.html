@@ -44,6 +44,45 @@
       }
     }
   </script>
+
+  <style>
+    /* Dropdown de cuenta */
+    #account-dropdown {
+      display: none;
+      position: absolute;
+      top: calc(100% + 8px);
+      right: 0;
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.14);
+      min-width: 180px;
+      z-index: 200;
+      overflow: hidden;
+    }
+    #account-dropdown.open { display: block; }
+    #account-dropdown a,
+    #account-dropdown button {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+      padding: 11px 16px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #111;
+      background: none;
+      border: none;
+      cursor: pointer;
+      text-decoration: none;
+      text-align: left;
+      transition: background 0.15s;
+    }
+    #account-dropdown a:hover,
+    #account-dropdown button:hover { background: #f9fafb; }
+    #account-dropdown .menu-divider { height: 1px; background: #f0f0f0; margin: 2px 0; }
+    #account-dropdown .danger { color: #dc2626; }
+  </style>
 </head>
 <body class="font-body-md text-body-md bg-background text-on-surface">
 
@@ -55,15 +94,45 @@
     </div>
     <div class="hidden md:flex items-center gap-md">
       <a class="text-on-primary border-b-2 border-on-primary pb-1 font-bold text-label-caps" href="index.html">INICIO</a>
-      <!-- Solo visible para admins logueados -->
       <a id="nav-panel-link" data-admin-only style="display:none"
         class="text-on-primary/70 hover:text-on-primary transition-colors text-label-caps font-bold" href="pages/panel.html">PANEL</a>
     </div>
     <div class="flex items-center gap-sm">
-      <!-- Ícono de cuenta: oculto hasta que auth.js resuelva la sesión -->
-      <button id="btn-account" class="p-2 hover:bg-white/10 transition-all rounded-full" title="Iniciar sesión" style="display:none">
-        <span class="material-symbols-outlined">login</span>
-      </button>
+
+      <!-- Botón "Ingresar" (visible si no hay sesión) -->
+      <a id="btn-login" href="/pages/login.html" style="display:none"
+        class="flex items-center gap-1 px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 transition-colors text-xs font-bold text-on-primary">
+        <span class="material-symbols-outlined" style="font-size:18px">login</span>
+        <span class="hidden md:inline">Ingresar</span>
+      </a>
+
+      <!-- Dropdown de cuenta (visible si hay sesión) -->
+      <div class="relative" id="account-menu-wrap" style="display:none">
+        <button
+          class="flex items-center gap-1 px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 transition-colors text-on-primary"
+          onclick="toggleAccountMenu(event)">
+          <span class="material-symbols-outlined" style="font-size:20px">account_circle</span>
+          <span id="avatar-name" class="hidden md:block max-w-[90px] truncate text-xs font-bold"></span>
+          <span class="material-symbols-outlined" style="font-size:14px" id="avatar-chevron">expand_more</span>
+        </button>
+
+        <div id="account-dropdown">
+          <a href="/pages/mi-cuenta.html#perfil">
+            <span class="material-symbols-outlined" style="font-size:18px">person</span>
+            Mi perfil
+          </a>
+          <a href="/pages/mi-cuenta.html#pedidos">
+            <span class="material-symbols-outlined" style="font-size:18px">receipt_long</span>
+            Mis pedidos
+          </a>
+          <div class="menu-divider"></div>
+          <button class="danger" onclick="BG_AUTH.logout()">
+            <span class="material-symbols-outlined" style="font-size:18px">logout</span>
+            Cerrar sesión
+          </button>
+        </div>
+      </div>
+
       <button class="md:hidden p-2" onclick="BG_UI.toggleSidebar()">
         <span class="material-symbols-outlined">menu</span>
       </button>
@@ -81,12 +150,24 @@
     <a class="flex items-center gap-sm p-sm rounded-lg font-bold bg-surface-container" href="index.html">
       <span class="material-symbols-outlined">home</span><span>Inicio</span>
     </a>
-    <!-- Solo visible para admins -->
     <a id="mobile-panel-link" data-admin-only style="display:none"
       class="flex items-center gap-sm p-sm rounded-lg text-on-surface-variant hover:bg-surface-container-low" href="pages/panel.html">
       <span class="material-symbols-outlined">admin_panel_settings</span><span>Panel</span>
     </a>
-    <!-- Se oculta si hay admin logueado -->
+    <!-- Links de cuenta en mobile -->
+    <a id="mobile-cuenta-link" style="display:none"
+      class="flex items-center gap-sm p-sm rounded-lg text-on-surface-variant hover:bg-surface-container-low" href="/pages/mi-cuenta.html#perfil">
+      <span class="material-symbols-outlined">person</span><span>Mi perfil</span>
+    </a>
+    <a id="mobile-pedidos-link" style="display:none"
+      class="flex items-center gap-sm p-sm rounded-lg text-on-surface-variant hover:bg-surface-container-low" href="/pages/mi-cuenta.html#pedidos">
+      <span class="material-symbols-outlined">receipt_long</span><span>Mis pedidos</span>
+    </a>
+    <button id="mobile-logout-btn" style="display:none"
+      class="flex items-center gap-sm p-sm rounded-lg text-on-surface-variant hover:bg-surface-container-low w-full text-left"
+      onclick="BG_AUTH.logout()">
+      <span class="material-symbols-outlined">logout</span><span>Cerrar sesión</span>
+    </button>
     <a id="mobile-login-link" data-hide-if-admin class="flex items-center gap-sm p-sm rounded-lg text-on-surface-variant hover:bg-surface-container-low" href="/pages/login.html">
       <span class="material-symbols-outlined">login</span><span>Iniciar sesión</span>
     </a>
@@ -137,7 +218,6 @@
     </div>
 
     <div id="catalog-grid" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-md">
-      <!-- Skeletons -->
       <div class="flat-card animate-pulse rounded-xl overflow-hidden"><div class="aspect-square bg-surface-container"></div><div class="p-sm"><div class="h-4 bg-surface-container rounded mb-2"></div><div class="h-3 bg-surface-container rounded w-2/3"></div></div></div>
       <div class="flat-card animate-pulse rounded-xl overflow-hidden"><div class="aspect-square bg-surface-container"></div><div class="p-sm"><div class="h-4 bg-surface-container rounded mb-2"></div><div class="h-3 bg-surface-container rounded w-2/3"></div></div></div>
       <div class="flat-card animate-pulse rounded-xl overflow-hidden"><div class="aspect-square bg-surface-container"></div><div class="p-sm"><div class="h-4 bg-surface-container rounded mb-2"></div><div class="h-3 bg-surface-container rounded w-2/3"></div></div></div>
@@ -185,26 +265,25 @@
         <span class="font-bold text-sm">TOTAL ESTIMADO</span>
         <span id="cart-total" class="font-mono font-bold text-lg">—</span>
       </div>
-      <!-- DESPUÉS -->
-<div class="flex flex-col gap-xs">
-  <button onclick="BG_CART.payWithMP()"
-    class="w-full flex items-center justify-center gap-2 bg-[#009EE3] text-white text-sm font-bold py-2.5 rounded-lg hover:opacity-90 active:scale-[0.98] transition-all">
-    <img src="https://http2.mlstatic.com/frontend-assets/mp-web-navigation/ui-navigation/6.6.73/mercadopago/logo__large@2x.png"
-      alt="Mercado Pago" class="h-4 object-contain brightness-0 invert"/>
-    Pagar con Mercado Pago
-  </button>
-  <div class="flex gap-xs">
-    <button onclick="BG_CART.clear()"
-      class="px-4 py-2 border border-outline-variant rounded-lg font-bold text-xs text-on-surface-variant hover:bg-surface-container-highest transition-all">
-      VACIAR
-    </button>
-    <button onclick="BG_CART.sendOrder()"
-      class="flex-1 flex items-center justify-center gap-xs bg-[#25D366] text-white text-sm font-bold py-2 rounded-lg hover:opacity-90 transition-all">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4">...</svg>
-      WhatsApp
-    </button>
-  </div>
-</div>
+      <div class="flex flex-col gap-xs">
+        <button onclick="BG_CART.payWithMP()"
+          class="w-full flex items-center justify-center gap-2 bg-[#009EE3] text-white text-sm font-bold py-2.5 rounded-lg hover:opacity-90 active:scale-[0.98] transition-all">
+          <img src="https://http2.mlstatic.com/frontend-assets/mp-web-navigation/ui-navigation/6.6.73/mercadopago/logo__large@2x.png"
+            alt="Mercado Pago" class="h-4 object-contain brightness-0 invert"/>
+          Pagar con Mercado Pago
+        </button>
+        <div class="flex gap-xs">
+          <button onclick="BG_CART.clear()"
+            class="px-4 py-2 border border-outline-variant rounded-lg font-bold text-xs text-on-surface-variant hover:bg-surface-container-highest transition-all">
+            VACIAR
+          </button>
+          <button onclick="BG_CART.sendOrder()"
+            class="flex-1 flex items-center justify-center gap-xs bg-[#25D366] text-white text-sm font-bold py-2 rounded-lg hover:opacity-90 transition-all">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4">...</svg>
+            WhatsApp
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -219,11 +298,72 @@
 (function () {
   'use strict';
 
+  /* ── Dropdown de cuenta ── */
+  window.toggleAccountMenu = function(e) {
+    e.stopPropagation();
+    const dd = document.getElementById('account-dropdown');
+    const chevron = document.getElementById('avatar-chevron');
+    const isOpen = dd.classList.toggle('open');
+    chevron.textContent = isOpen ? 'expand_less' : 'expand_more';
+  };
+  document.addEventListener('click', (e) => {
+    const wrap = document.getElementById('account-menu-wrap');
+    if (wrap && !wrap.contains(e.target)) {
+      document.getElementById('account-dropdown')?.classList.remove('open');
+      const ch = document.getElementById('avatar-chevron');
+      if (ch) ch.textContent = 'expand_more';
+    }
+  });
+
+  /* ── Actualizar nav según sesión ──
+     Escuchamos el evento customizado que lanza auth.js,
+     o bien lo llamamos directamente si BG_AUTH ya expone el perfil. */
+  async function refreshAccountNav() {
+    try {
+      const session = await BG_AUTH.getSession();
+      const wrap     = document.getElementById('account-menu-wrap');
+      const btnLogin = document.getElementById('btn-login');
+      const mobileLogin  = document.getElementById('mobile-login-link');
+      const mobileCuenta = document.getElementById('mobile-cuenta-link');
+      const mobilePedidos = document.getElementById('mobile-pedidos-link');
+      const mobileLogout = document.getElementById('mobile-logout-btn');
+
+      if (session) {
+        const profile = await BG_AUTH.getProfile();
+        const nombre = profile?.nombre || session.user.email?.split('@')[0] || '';
+
+        // Desktop
+        if (wrap)     wrap.style.display     = 'block';
+        if (btnLogin) btnLogin.style.display  = 'none';
+
+        // Nombre en el avatar
+        const avatarName = document.getElementById('avatar-name');
+        if (avatarName && nombre) avatarName.textContent = nombre;
+
+        // Mobile sidebar
+        if (mobileLogin)   mobileLogin.style.display   = 'none';
+        if (mobileCuenta)  mobileCuenta.style.display   = 'flex';
+        if (mobilePedidos) mobilePedidos.style.display  = 'flex';
+        if (mobileLogout)  mobileLogout.style.display   = 'flex';
+      } else {
+        if (wrap)     wrap.style.display     = 'none';
+        if (btnLogin) btnLogin.style.display  = 'flex';
+
+        if (mobileLogin)   mobileLogin.style.display   = 'flex';
+        if (mobileCuenta)  mobileCuenta.style.display   = 'none';
+        if (mobilePedidos) mobilePedidos.style.display  = 'none';
+        if (mobileLogout)  mobileLogout.style.display   = 'none';
+      }
+    } catch(e) {
+      // Si auth.js no está listo todavía, reintentar
+      console.warn('refreshAccountNav error:', e);
+    }
+  }
+
   function esc(str) {
     return String(str ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   }
 
-  /* Categorías para el filtro del catálogo */
   async function loadCategories() {
     const select = document.getElementById('catalog-category');
     if (!select) return;
@@ -240,10 +380,8 @@
     }
   }
 
-  /* Mapa de productos cargados, para leerlos al agregar al carrito */
   let productsById = {};
 
-  /* Clampea el input de cantidad contra el stock disponible (delegado) */
   function clampQtyInput(input) {
     const max = parseInt(input.max, 10) || 1;
     let val = parseInt(input.value, 10) || 1;
@@ -252,7 +390,6 @@
     return val;
   }
 
-  /* Catálogo público */
   async function loadCatalog(search = '', category = '') {
     const grid    = document.getElementById('catalog-grid');
     const countEl = document.getElementById('catalog-count');
@@ -302,7 +439,6 @@
     }
   }
 
-  /* Click delegado: agregar al carrito + clamp en vivo de la cantidad */
   document.getElementById('catalog-grid')?.addEventListener('click', (e) => {
     const btn = e.target.closest('[data-add-cart]');
     if (!btn) return;
@@ -328,20 +464,20 @@
     }
   });
 
-  /* Búsqueda con debounce */
   document.getElementById('catalog-search')?.addEventListener('input', BG_UI.debounce(e => {
     loadCatalog(e.target.value.trim(), document.getElementById('catalog-category')?.value || '');
   }, 400));
 
-  /* Filtro por categoría */
   document.getElementById('catalog-category')?.addEventListener('change', e => {
     loadCatalog(document.getElementById('catalog-search')?.value.trim() || '', e.target.value);
   });
 
-  /* Si hay admin logueado, actualizar nav (muestra PANEL y avatar) */
+  // Nav admin
   BG_AUTH.updateNav();
 
-  /* Init */
+  // Nav cuenta (usuario normal)
+  refreshAccountNav();
+
   BG_CART.init();
   loadCategories();
   loadCatalog();
