@@ -204,6 +204,38 @@
     render();
   }
 
+   // Agrega esto antes de window.BG_CART = {...}
+async function payWithMP() {
+  const list = getItems();
+  if (!list.length) {
+    BG_UI.toast('El carrito está vacío.', 'warning');
+    return;
+  }
+
+  try {
+    BG_UI.toast('Redirigiendo a Mercado Pago...', 'success');
+
+    const response = await fetch('/api/create-preference', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ items: list }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok || !data.init_point) {
+      BG_UI.toast('Error al iniciar el pago. Intentá de nuevo.', 'warning');
+      return;
+    }
+
+    window.location.href = data.init_point;
+
+  } catch (err) {
+    console.error(err);
+    BG_UI.toast('Error de conexión. Intentá de nuevo.', 'warning');
+  }
+}
+   
   /* ── Exportar namespace BG_CART ── */
   window.BG_CART = {
     init,
