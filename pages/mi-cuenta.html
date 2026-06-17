@@ -303,7 +303,7 @@
         return `
           <div class="flex items-center justify-between py-3 border-b border-gray-100 last:border-0">
             <div>
-              <p class="text-sm font-bold text-black">#${v.id.slice(0,8).toUpperCase()}</p>
+              <p class="text-sm font-bold text-black">#${String(v.id).slice(0,8).toUpperCase()}</p>
               <p class="text-xs text-gray-400">${fecha}</p>
             </div>
             <div class="flex items-center gap-3">
