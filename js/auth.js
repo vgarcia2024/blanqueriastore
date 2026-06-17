@@ -118,11 +118,23 @@
     }
   }
 
+async function getProfile() {
+  const user = await getUser();
+  if (!user) return null;
+  const { data } = await BG.db
+    .from('profiles')
+    .select('*')
+    .eq('id', user.id)
+    .single();
+  return data;
+}
+   
   /* ── Exportar namespace BG_AUTH ── */
   window.BG_AUTH = {
     getSession,
     getUser,
     isAdmin,
+    getProfile,
     login,
     logout,
     requireAdmin,
